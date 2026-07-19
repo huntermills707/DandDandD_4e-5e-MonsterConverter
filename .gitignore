@@ -1,0 +1,11 @@
+# Source PDFs are copyrighted material - never commit
+*.pdf
+
+# Extracted text and parsed stat blocks are derived from the PDFs
+data/raw/
+data/processed/
+
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/

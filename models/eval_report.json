@@ -1,0 +1,810 @@
+{
+  "4e_to_5e/cr_num": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "cr_num",
+    "features": [
+      "level",
+      "hp",
+      "ac",
+      "attack_bonus",
+      "damage_avg"
+    ],
+    "n": 110,
+    "n_train": 66,
+    "n_cal": 22,
+    "n_test": 22,
+    "intercept": -4.2191,
+    "coef": [
+      0.0,
+      0.012683,
+      0.273762,
+      0.0,
+      0.086779
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.8477,
+    "test_coverage": 0.818,
+    "r2": 0.789,
+    "mae": 2.718,
+    "baseline_mae": 5.15,
+    "equation": "CR = 0.0000\u00b7level + 0.0127\u00b7hp + 0.2738\u00b7ac + 0.0000\u00b7atk + 0.0868\u00b7dmg - 4.2191"
+  },
+  "4e_to_5e/hp": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "hp",
+    "features": [
+      "hp",
+      "level",
+      "ac",
+      "ability_con"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": -44.6448,
+    "coef": [
+      0.279177,
+      0.0,
+      2.215518,
+      2.126452
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.4439,
+    "test_coverage": 0.708,
+    "r2": 0.835,
+    "mae": 41.105,
+    "baseline_mae": 71.845,
+    "equation": "hp = 0.2792\u00b7hp + 0.0000\u00b7level + 2.2155\u00b7ac + 2.1265\u00b7con - 44.6448"
+  },
+  "4e_to_5e/ac": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "ac",
+    "features": [
+      "ac",
+      "level",
+      "ability_dex"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 6.7164,
+    "coef": [
+      0.262151,
+      0.0,
+      0.091957
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.2666,
+    "test_coverage": 0.917,
+    "r2": 0.535,
+    "mae": 1.566,
+    "baseline_mae": 2.135,
+    "equation": "ac = 0.2622\u00b7ac + 0.0000\u00b7level + 0.0920\u00b7dex + 6.7164"
+  },
+  "4e_to_5e/attack_bonus": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "attack_bonus",
+    "features": [
+      "attack_bonus",
+      "level",
+      "ability_str",
+      "ability_dex"
+    ],
+    "n": 99,
+    "n_train": 59,
+    "n_cal": 19,
+    "n_test": 21,
+    "intercept": -1.0442,
+    "coef": [
+      0.0,
+      0.249258,
+      0.16619,
+      0.143305
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.5314,
+    "test_coverage": 0.905,
+    "r2": 0.528,
+    "mae": 2.043,
+    "baseline_mae": 2.86,
+    "equation": "atk = 0.0000\u00b7atk + 0.2493\u00b7level + 0.1662\u00b7str + 0.1433\u00b7dex - 1.0442"
+  },
+  "4e_to_5e/damage_avg": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "damage_avg",
+    "features": [
+      "damage_avg",
+      "level",
+      "ability_str"
+    ],
+    "n": 92,
+    "n_train": 55,
+    "n_cal": 18,
+    "n_test": 19,
+    "intercept": 6.7906,
+    "coef": [
+      0.0,
+      0.50173,
+      0.019447
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.8319,
+    "test_coverage": 1.0,
+    "r2": -0.038,
+    "mae": 4.363,
+    "baseline_mae": 3.646,
+    "equation": "dmg = 0.0000\u00b7dmg + 0.5017\u00b7level + 0.0194\u00b7str + 6.7906"
+  },
+  "4e_to_5e/ability_str": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "ability_str",
+    "features": [
+      "ability_str",
+      "level"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 1.0247,
+    "coef": [
+      0.774853,
+      0.142306
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.2689,
+    "test_coverage": 0.875,
+    "r2": 0.009,
+    "mae": 6.677,
+    "baseline_mae": 7.744,
+    "equation": "str = 0.7749\u00b7str + 0.1423\u00b7level + 1.0247"
+  },
+  "4e_to_5e/ability_dex": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "ability_dex",
+    "features": [
+      "ability_dex",
+      "level"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 9.656,
+    "coef": [
+      0.223372,
+      0.0
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.3161,
+    "test_coverage": 0.917,
+    "r2": 0.128,
+    "mae": 2.41,
+    "baseline_mae": 2.762,
+    "equation": "dex = 0.2234\u00b7dex + 0.0000\u00b7level + 9.6560"
+  },
+  "4e_to_5e/ability_con": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "ability_con",
+    "features": [
+      "ability_con",
+      "level"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 7.2498,
+    "coef": [
+      0.361142,
+      0.248662
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.246,
+    "test_coverage": 0.917,
+    "r2": 0.469,
+    "mae": 2.47,
+    "baseline_mae": 3.158,
+    "equation": "con = 0.3611\u00b7con + 0.2487\u00b7level + 7.2498"
+  },
+  "4e_to_5e/ability_int": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "ability_int",
+    "features": [
+      "ability_int",
+      "level"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 1.4969,
+    "coef": [
+      0.692342,
+      0.176927
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.5552,
+    "test_coverage": 0.833,
+    "r2": 0.492,
+    "mae": 2.546,
+    "baseline_mae": 3.779,
+    "equation": "int = 0.6923\u00b7int + 0.1769\u00b7level + 1.4969"
+  },
+  "4e_to_5e/ability_wis": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "ability_wis",
+    "features": [
+      "ability_wis",
+      "level"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 6.8404,
+    "coef": [
+      0.289513,
+      0.125942
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.5038,
+    "test_coverage": 1.0,
+    "r2": -0.003,
+    "mae": 1.778,
+    "baseline_mae": 1.877,
+    "equation": "wis = 0.2895\u00b7wis + 0.1259\u00b7level + 6.8404"
+  },
+  "4e_to_5e/ability_cha": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "ability_cha",
+    "features": [
+      "ability_cha",
+      "level"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 2.7467,
+    "coef": [
+      0.495069,
+      0.267384
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.6026,
+    "test_coverage": 1.0,
+    "r2": 0.294,
+    "mae": 2.874,
+    "baseline_mae": 3.707,
+    "equation": "cha = 0.4951\u00b7cha + 0.2674\u00b7level + 2.7467"
+  },
+  "4e_to_5e/save_dex": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "save_dex",
+    "features": [
+      "ref",
+      "ability_dex",
+      "level"
+    ],
+    "n": 30,
+    "n_train": 18,
+    "n_cal": 6,
+    "n_test": 6,
+    "intercept": 1.8268,
+    "coef": [
+      0.0,
+      0.16107,
+      0.074102
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.4247,
+    "test_coverage": 0.667,
+    "r2": -0.622,
+    "mae": 1.048,
+    "baseline_mae": 1.222,
+    "equation": "save_dex = 0.0000\u00b7ref + 0.1611\u00b7dex + 0.0741\u00b7level + 1.8268"
+  },
+  "4e_to_5e/save_con": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "save_con",
+    "features": [
+      "fort",
+      "ability_con",
+      "level"
+    ],
+    "n": 29,
+    "n_train": 17,
+    "n_cal": 5,
+    "n_test": 7,
+    "intercept": 2.1595,
+    "coef": [
+      0.221672,
+      0.0,
+      0.0
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 1.114,
+    "test_coverage": 1.0,
+    "r2": 0.548,
+    "mae": 1.808,
+    "baseline_mae": 3.353,
+    "equation": "save_con = 0.2217\u00b7fort + 0.0000\u00b7con + 0.0000\u00b7level + 2.1595"
+  },
+  "4e_to_5e/save_wis": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "save_wis",
+    "features": [
+      "will",
+      "ability_wis",
+      "level"
+    ],
+    "n": 42,
+    "n_train": 25,
+    "n_cal": 8,
+    "n_test": 9,
+    "intercept": 1.2359,
+    "coef": [
+      0.080405,
+      0.0,
+      0.189171
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 1.7342,
+    "test_coverage": 1.0,
+    "r2": -0.141,
+    "mae": 1.647,
+    "baseline_mae": 1.302,
+    "equation": "save_wis = 0.0804\u00b7will + 0.0000\u00b7wis + 0.1892\u00b7level + 1.2359"
+  },
+  "4e_to_5e/save_cha": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "save_cha",
+    "features": [
+      "will",
+      "ability_cha",
+      "level"
+    ],
+    "n": 33,
+    "n_train": 19,
+    "n_cal": 6,
+    "n_test": 8,
+    "intercept": 2.5351,
+    "coef": [
+      0.082645,
+      0.0,
+      0.184439
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.5871,
+    "test_coverage": 0.875,
+    "r2": -0.127,
+    "mae": 1.676,
+    "baseline_mae": 1.553,
+    "equation": "save_cha = 0.0826\u00b7will + 0.0000\u00b7cha + 0.1844\u00b7level + 2.5351"
+  },
+  "5e_to_4e/level": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "level",
+    "features": [
+      "cr_num",
+      "hp",
+      "ac",
+      "attack_bonus",
+      "damage_avg"
+    ],
+    "n": 99,
+    "n_train": 59,
+    "n_cal": 19,
+    "n_test": 21,
+    "intercept": 6.5809,
+    "coef": [
+      0.491702,
+      0.012471,
+      0.0,
+      0.0,
+      0.069827
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.6737,
+    "test_coverage": 0.857,
+    "r2": 0.536,
+    "mae": 3.854,
+    "baseline_mae": 5.612,
+    "equation": "level = 0.4917\u00b7CR + 0.0125\u00b7hp + 0.0000\u00b7ac + 0.0000\u00b7atk + 0.0698\u00b7dmg + 6.5809"
+  },
+  "5e_to_4e/hp": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "hp",
+    "features": [
+      "hp",
+      "cr_num",
+      "ac",
+      "ability_con"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": -60.477,
+    "coef": [
+      2.462294,
+      1.280756,
+      0.0,
+      0.0
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 1.3972,
+    "test_coverage": 0.792,
+    "r2": 0.841,
+    "mae": 98.355,
+    "baseline_mae": 188.411,
+    "equation": "hp = 2.4623\u00b7hp + 1.2808\u00b7CR + 0.0000\u00b7ac + 0.0000\u00b7con - 60.4770"
+  },
+  "5e_to_4e/ac": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "ac",
+    "features": [
+      "ac",
+      "cr_num",
+      "ability_dex"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 18.6913,
+    "coef": [
+      0.0,
+      0.815988,
+      0.104834
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.2769,
+    "test_coverage": 0.958,
+    "r2": 0.568,
+    "mae": 3.594,
+    "baseline_mae": 5.176,
+    "equation": "ac = 0.0000\u00b7ac + 0.8160\u00b7CR + 0.1048\u00b7dex + 18.6913"
+  },
+  "5e_to_4e/fort": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "fort",
+    "features": [
+      "ability_con",
+      "ability_str",
+      "cr_num",
+      "hp"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 14.6521,
+    "coef": [
+      0.0,
+      0.291691,
+      0.422883,
+      0.016232
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.2407,
+    "test_coverage": 0.875,
+    "r2": 0.035,
+    "mae": 5.016,
+    "baseline_mae": 6.139,
+    "equation": "fort = 0.0000\u00b7con + 0.2917\u00b7str + 0.4229\u00b7CR + 0.0162\u00b7hp + 14.6521"
+  },
+  "5e_to_4e/ref": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "ref",
+    "features": [
+      "ability_dex",
+      "cr_num",
+      "hp"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 10.1549,
+    "coef": [
+      0.519953,
+      0.430604,
+      0.028379
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.3005,
+    "test_coverage": 0.958,
+    "r2": 0.504,
+    "mae": 3.798,
+    "baseline_mae": 4.917,
+    "equation": "ref = 0.5200\u00b7dex + 0.4306\u00b7CR + 0.0284\u00b7hp + 10.1549"
+  },
+  "5e_to_4e/will": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "will",
+    "features": [
+      "ability_wis",
+      "ability_cha",
+      "cr_num",
+      "hp"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 11.6701,
+    "coef": [
+      0.301257,
+      0.245262,
+      0.341698,
+      0.015308
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.36,
+    "test_coverage": 0.958,
+    "r2": 0.449,
+    "mae": 3.999,
+    "baseline_mae": 5.019,
+    "equation": "will = 0.3013\u00b7wis + 0.2453\u00b7cha + 0.3417\u00b7CR + 0.0153\u00b7hp + 11.6701"
+  },
+  "5e_to_4e/attack_bonus": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "attack_bonus",
+    "features": [
+      "attack_bonus",
+      "cr_num",
+      "ability_str",
+      "ability_dex"
+    ],
+    "n": 99,
+    "n_train": 59,
+    "n_cal": 19,
+    "n_test": 21,
+    "intercept": 11.2985,
+    "coef": [
+      0.0,
+      0.708081,
+      0.003644,
+      0.027358
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.444,
+    "test_coverage": 0.905,
+    "r2": 0.552,
+    "mae": 3.465,
+    "baseline_mae": 5.247,
+    "equation": "atk = 0.0000\u00b7atk + 0.7081\u00b7CR + 0.0036\u00b7str + 0.0274\u00b7dex + 11.2985"
+  },
+  "5e_to_4e/damage_avg": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "damage_avg",
+    "features": [
+      "damage_avg",
+      "cr_num",
+      "ability_str"
+    ],
+    "n": 92,
+    "n_train": 55,
+    "n_cal": 18,
+    "n_test": 19,
+    "intercept": 9.9688,
+    "coef": [
+      0.0,
+      0.615261,
+      0.0
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.552,
+    "test_coverage": 0.895,
+    "r2": 0.489,
+    "mae": 5.165,
+    "baseline_mae": 6.832,
+    "equation": "dmg = 0.0000\u00b7dmg + 0.6153\u00b7CR + 0.0000\u00b7str + 9.9688"
+  },
+  "5e_to_4e/ability_str": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "ability_str",
+    "features": [
+      "ability_str",
+      "cr_num"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 6.0342,
+    "coef": [
+      0.723594,
+      0.0
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.2593,
+    "test_coverage": 0.792,
+    "r2": -5.158,
+    "mae": 5.877,
+    "baseline_mae": 4.967,
+    "equation": "str = 0.7236\u00b7str + 0.0000\u00b7CR + 6.0342"
+  },
+  "5e_to_4e/ability_dex": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "ability_dex",
+    "features": [
+      "ability_dex",
+      "cr_num"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 7.5034,
+    "coef": [
+      0.572437,
+      0.318999
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.3758,
+    "test_coverage": 0.958,
+    "r2": 0.343,
+    "mae": 2.832,
+    "baseline_mae": 3.296,
+    "equation": "dex = 0.5724\u00b7dex + 0.3190\u00b7CR + 7.5034"
+  },
+  "5e_to_4e/ability_con": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "ability_con",
+    "features": [
+      "ability_con",
+      "cr_num"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 7.3924,
+    "coef": [
+      0.635571,
+      0.0
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.3928,
+    "test_coverage": 0.917,
+    "r2": 0.248,
+    "mae": 2.805,
+    "baseline_mae": 3.737,
+    "equation": "con = 0.6356\u00b7con + 0.0000\u00b7CR + 7.3924"
+  },
+  "5e_to_4e/ability_int": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "ability_int",
+    "features": [
+      "ability_int",
+      "cr_num"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 1.2679,
+    "coef": [
+      0.868878,
+      0.0
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.6673,
+    "test_coverage": 0.958,
+    "r2": 0.684,
+    "mae": 2.545,
+    "baseline_mae": 4.525,
+    "equation": "int = 0.8689\u00b7int + 0.0000\u00b7CR + 1.2679"
+  },
+  "5e_to_4e/ability_wis": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "ability_wis",
+    "features": [
+      "ability_wis",
+      "cr_num"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 8.6221,
+    "coef": [
+      0.379068,
+      0.152543
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.4412,
+    "test_coverage": 0.958,
+    "r2": 0.022,
+    "mae": 2.142,
+    "baseline_mae": 2.226,
+    "equation": "wis = 0.3791\u00b7wis + 0.1525\u00b7CR + 8.6221"
+  },
+  "5e_to_4e/ability_cha": {
+    "direction": "5e_to_4e",
+    "source_edition": "5e",
+    "target_edition": "4e",
+    "target": "ability_cha",
+    "features": [
+      "ability_cha",
+      "cr_num"
+    ],
+    "n": 117,
+    "n_train": 70,
+    "n_cal": 23,
+    "n_test": 24,
+    "intercept": 6.0731,
+    "coef": [
+      0.618704,
+      0.0
+    ],
+    "alpha": 0.2,
+    "conformal_quantile_relative": 0.5652,
+    "test_coverage": 0.958,
+    "r2": 0.449,
+    "mae": 2.631,
+    "baseline_mae": 3.955,
+    "equation": "cha = 0.6187\u00b7cha + 0.0000\u00b7CR + 6.0731"
+  }
+}
