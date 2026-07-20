@@ -1,0 +1,446 @@
+/* D&D Monster Edition Converter — theme */
+
+:root {
+    --bg: #0e1014;
+    --bg-glow: #171a21;
+    --panel: #171a20;
+    --panel-raised: #1d2129;
+    --border: #2b303b;
+    --border-strong: #3a4150;
+    --text: #ece9e0;
+    --muted: #9aa1ad;
+    --faint: #6b7280;
+    --accent: #d63a2f;
+    --accent-hover: #e84b3f;
+    --gold: #c9a44a;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background:
+        radial-gradient(1200px 500px at 50% -10%, var(--bg-glow), transparent 70%),
+        var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+    border-bottom: 1px solid var(--border);
+    padding: 40px 24px 28px;
+    text-align: center;
+    position: relative;
+}
+
+.hero::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.6;
+}
+
+.hero h1 {
+    font-family: var(--serif);
+    font-size: 2.1rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin: 0 0 6px;
+}
+
+.hero .subtitle {
+    color: var(--muted);
+    margin: 0 0 22px;
+    font-size: 0.98rem;
+}
+
+/* ---------- Direction toggle (segmented control) ---------- */
+
+.direction-toggle {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+}
+
+.direction-toggle label {
+    margin: 0 !important;
+    padding: 8px 22px;
+    border-radius: 999px;
+    cursor: pointer;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: background 0.15s ease, color 0.15s ease;
+    user-select: none;
+}
+
+.direction-toggle label:hover {
+    color: var(--text);
+}
+
+.direction-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.direction-toggle label:has(input:checked) {
+    background: var(--accent);
+    color: #fff;
+}
+
+/* ---------- Tabs ---------- */
+
+.container {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 28px 20px 64px;
+}
+
+.tabs-container {
+    border: none !important;
+}
+
+.custom-tab {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    color: var(--muted) !important;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 10px 18px !important;
+    transition: color 0.15s ease;
+}
+
+.custom-tab:hover {
+    color: var(--text) !important;
+}
+
+.custom-tab--selected {
+    color: var(--text) !important;
+    border-bottom: 2px solid var(--accent) !important;
+}
+
+.tab-content {
+    padding-top: 24px;
+}
+
+/* ---------- Cards ---------- */
+
+.card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.card-eyebrow {
+    display: block;
+    color: var(--gold);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+.card h3 {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 4px;
+}
+
+.card-hint {
+    color: var(--faint);
+    font-size: 0.82rem;
+    margin: 0 0 14px;
+}
+
+/* ---------- Convert grid ---------- */
+
+.convert-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+.field-group + .field-group {
+    margin-top: 18px;
+}
+
+.field-group-title {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+}
+
+.fields-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+    gap: 10px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.field-label {
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.field-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    padding: 8px 10px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field-input::placeholder {
+    color: var(--faint);
+}
+
+.field-input:hover {
+    border-color: var(--border-strong);
+}
+
+.field-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(214, 58, 47, 0.18);
+}
+
+/* hide number spinners for a cleaner look */
+.field-input::-webkit-outer-spin-button,
+.field-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.field-input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* ---------- Output stat sheet ---------- */
+
+.output-card {
+    background: linear-gradient(180deg, var(--panel-raised), var(--panel));
+}
+
+.stat-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 2px;
+    border-bottom: 1px solid var(--border);
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    color: var(--muted);
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.stat-value {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    text-align: right;
+}
+
+.stat-pred {
+    font-family: var(--mono);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.stat-interval {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--gold);
+    white-space: nowrap;
+}
+
+.stat-empty {
+    color: var(--faint);
+}
+
+/* ---------- Scaler: axis controls & deltas ---------- */
+
+.axis-row {
+    margin: 10px 0 16px;
+    max-width: 200px;
+}
+
+.axis-input {
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 10px 12px;
+}
+
+.stat-delta {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.delta-up {
+    color: #6fbf73;
+}
+
+.delta-down {
+    color: var(--accent-hover);
+}
+
+.delta-flat {
+    color: var(--faint);
+}
+
+/* ---------- Method table ---------- */
+
+.method-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.method-table th {
+    text-align: left;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-strong);
+}
+
+.method-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+}
+
+.method-table tr:last-child td {
+    border-bottom: none;
+}
+
+.method-table .mono {
+    font-family: var(--mono);
+}
+
+/* ---------- Explain tab ---------- */
+
+.explain-intro {
+    margin-bottom: 20px;
+}
+
+.explain-intro p {
+    color: var(--muted);
+    margin: 6px 0 0;
+    max-width: 70ch;
+}
+
+.direction-heading {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    margin: 28px 0 12px;
+    padding-left: 10px;
+    border-left: 3px solid var(--accent);
+}
+
+.model-card {
+    margin-bottom: 14px;
+}
+
+.model-card h4 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+    color: var(--text);
+}
+
+.equation {
+    display: block;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: 0 0 12px;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: #b8c4d8;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.metrics {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.metrics li {
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: var(--mono);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 860px) {
+    .convert-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero {
+        padding: 28px 16px 22px;
+    }
+
+    .hero h1 {
+        font-size: 1.6rem;
+    }
+}

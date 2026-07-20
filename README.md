@@ -27,7 +27,7 @@ data/
     raw/            extracted PDF text + parsed JSONL (local only, gitignored)
     processed/      matched cross-edition training pairs (local only)
 models/             fitted regression models + evaluation reports
-app/                Dash web app (converter form + equations page)
+app/                Dash web apps (edition converter, difficulty scaler)
 tests/              parser and model tests
 requirements.txt
 ```
@@ -73,13 +73,22 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
    regressions in both directions (4e→5e and 5e→4e). Models now cover HP,
    AC, attack bonus, damage average, CR/level, all six ability scores, and
    saving throws (5e saves from 4e defenses; 4e defenses from 5e saves/abilities).
-   Each model uses multiple source-edition covariates and reports a
-   scale-adaptive split-conformal 80% prediction interval alongside point
-   predictions (relative residual, lower bound clamped at 0).
+   Each model uses multiple source-edition covariates. Coefficients and the
+   intercept are constrained to be non-negative, so all point predictions are
+   non-negative. Each model reports a scale-adaptive split-conformal 80%
+   prediction interval alongside point predictions (relative residual, lower
+   bound clamped at 0).
 6. [x] **Web app** — `app/app.py` is a bidirectional Dash dashboard with a
    direction switch (4e → 5e / 5e → 4e), a **Convert** tab showing predicted
    stats with intervals, and an **Explain** tab listing every fitted equation,
    features, R², MAE, and interval width.
+7. [x] **Difficulty scaler** — `models/fit_scale_models.py` fits within-edition
+   scaling curves (stat ~ level for 4e, stat ~ CR for 5e; HP/damage
+   multiplicative, everything else additive, pooled fallback for sparse 5e
+   saves). `app/scale_app.py` (port 8051) scales a typed-in monster to a new
+   level/CR: every stat shifts by the curve-implied difference, preserving the
+   monster's own deviation from the average. A **Method** tab lists each
+   curve's per-step change, R², and n.
 
 ## Design notes
 
@@ -119,6 +128,12 @@ python3 data/processed/build_pairs.py
 # fit per-field linear models and save equations
 .venv/bin/python models/fit_models.py
 
+# fit within-edition scaling curves (level/CR -> stat)
+.venv/bin/python models/fit_scale_models.py
+
 # run the Dash converter/explanation app
 .venv/bin/python app/app.py
+
+# run the Dash difficulty scaler (port 8051)
+.venv/bin/python app/scale_app.py
 ```

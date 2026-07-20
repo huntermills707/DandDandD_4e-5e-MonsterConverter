@@ -15,21 +15,21 @@
     "n_train": 66,
     "n_cal": 22,
     "n_test": 22,
-    "intercept": -4.2191,
+    "intercept": 0.0,
     "coef": [
+      0.197576,
+      0.014188,
+      0.030411,
       0.0,
-      0.012683,
-      0.273762,
-      0.0,
-      0.086779
+      0.052263
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.8477,
-    "test_coverage": 0.818,
-    "r2": 0.789,
-    "mae": 2.718,
+    "conformal_quantile_relative": 0.886,
+    "test_coverage": 0.864,
+    "r2": 0.79,
+    "mae": 2.642,
     "baseline_mae": 5.15,
-    "equation": "CR = 0.0000\u00b7level + 0.0127\u00b7hp + 0.2738\u00b7ac + 0.0000\u00b7atk + 0.0868\u00b7dmg - 4.2191"
+    "equation": "CR = 0.1976\u00b7level + 0.0142\u00b7hp + 0.0304\u00b7ac + 0.0000\u00b7atk + 0.0523\u00b7dmg + 0.0000"
   },
   "4e_to_5e/hp": {
     "direction": "4e_to_5e",
@@ -46,20 +46,20 @@
     "n_train": 70,
     "n_cal": 23,
     "n_test": 24,
-    "intercept": -44.6448,
+    "intercept": 0.0,
     "coef": [
-      0.279177,
-      0.0,
-      2.215518,
-      2.126452
+      0.296293,
+      1.400563,
+      0.298431,
+      1.310111
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.4439,
-    "test_coverage": 0.708,
-    "r2": 0.835,
-    "mae": 41.105,
+    "conformal_quantile_relative": 0.5416,
+    "test_coverage": 0.792,
+    "r2": 0.84,
+    "mae": 40.372,
     "baseline_mae": 71.845,
-    "equation": "hp = 0.2792\u00b7hp + 0.0000\u00b7level + 2.2155\u00b7ac + 2.1265\u00b7con - 44.6448"
+    "equation": "hp = 0.2963\u00b7hp + 1.4006\u00b7level + 0.2984\u00b7ac + 1.3101\u00b7con + 0.0000"
   },
   "4e_to_5e/ac": {
     "direction": "4e_to_5e",
@@ -104,20 +104,20 @@
     "n_train": 59,
     "n_cal": 19,
     "n_test": 21,
-    "intercept": -1.0442,
+    "intercept": 0.0,
     "coef": [
       0.0,
-      0.249258,
-      0.16619,
-      0.143305
+      0.27548,
+      0.127257,
+      0.107831
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.5314,
-    "test_coverage": 0.905,
-    "r2": 0.528,
-    "mae": 2.043,
+    "conformal_quantile_relative": 0.5204,
+    "test_coverage": 0.81,
+    "r2": 0.515,
+    "mae": 2.061,
     "baseline_mae": 2.86,
-    "equation": "atk = 0.0000\u00b7atk + 0.2493\u00b7level + 0.1662\u00b7str + 0.1433\u00b7dex - 1.0442"
+    "equation": "atk = 0.0000\u00b7atk + 0.2755\u00b7level + 0.1273\u00b7str + 0.1078\u00b7dex + 0.0000"
   },
   "4e_to_5e/damage_avg": {
     "direction": "4e_to_5e",
@@ -462,20 +462,20 @@
     "n_train": 70,
     "n_cal": 23,
     "n_test": 24,
-    "intercept": -60.477,
+    "intercept": 0.0,
     "coef": [
-      2.462294,
-      1.280756,
+      2.256695,
+      0.0,
       0.0,
       0.0
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 1.3972,
+    "conformal_quantile_relative": 0.5922,
     "test_coverage": 0.792,
-    "r2": 0.841,
-    "mae": 98.355,
+    "r2": 0.851,
+    "mae": 94.076,
     "baseline_mae": 188.411,
-    "equation": "hp = 2.4623\u00b7hp + 1.2808\u00b7CR + 0.0000\u00b7ac + 0.0000\u00b7con - 60.4770"
+    "equation": "hp = 2.2567\u00b7hp + 0.0000\u00b7CR + 0.0000\u00b7ac + 0.0000\u00b7con + 0.0000"
   },
   "5e_to_4e/ac": {
     "direction": "5e_to_4e",

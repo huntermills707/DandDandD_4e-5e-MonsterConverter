@@ -11,6 +11,7 @@ from pathlib import Path
 
 import dash
 from dash import dcc, html, Input, Output, ALL
+from dash.exceptions import PreventUpdate
 
 ROOT = Path(__file__).resolve().parent.parent
 MODELS_PATH = ROOT / "models" / "models.json"
@@ -31,6 +32,23 @@ DIRECTION_LABELS = {
     "5e_to_4e": "5e → 4e",
 }
 
+# Display grouping for the field grids: (group title, fields)
+FIELD_GROUPS = [
+    ("Core stats", ["level", "cr_num", "hp", "ac", "attack_bonus", "damage_avg"]),
+    (
+        "Ability scores",
+        ["ability_str", "ability_dex", "ability_con",
+         "ability_int", "ability_wis", "ability_cha"],
+    ),
+    ("Defenses", ["fort", "ref", "will"]),
+    (
+        "Saving throws",
+        ["save_str", "save_dex", "save_con", "save_int", "save_wis", "save_cha"],
+    ),
+]
+
+FIELD_ORDER = [f for _, fields in FIELD_GROUPS for f in fields]
+
 
 def fields_for_direction(direction):
     """Return (input_fields, output_fields) for the chosen direction."""
@@ -42,17 +60,23 @@ def fields_for_direction(direction):
         input_fields.update(model["features"])
         output_fields.add(model["target"])
     # deterministic order
-    order = [
-        "level", "cr_num", "hp", "ac",
-        "attack_bonus", "damage_avg",
-        "ability_str", "ability_dex", "ability_con",
-        "ability_int", "ability_wis", "ability_cha",
-        "fort", "ref", "will",
-        "save_str", "save_dex", "save_con", "save_int", "save_wis", "save_cha",
-    ]
-    input_fields = [f for f in order if f in input_fields]
-    output_fields = [f for f in order if f in output_fields]
+    input_fields = [f for f in FIELD_ORDER if f in input_fields]
+    output_fields = [f for f in FIELD_ORDER if f in output_fields]
     return input_fields, output_fields
+
+
+def group_fields(fields):
+    """Group an ordered field list into titled sections, preserving order."""
+    groups = []
+    remaining = set(fields)
+    for title, group_fields_ in FIELD_GROUPS:
+        present = [f for f in fields if f in group_fields_]
+        if present:
+            groups.append((title, present))
+            remaining.difference_update(present)
+    if remaining:
+        groups.append(("Other", [f for f in fields if f in remaining]))
+    return groups
 
 
 def label_for(field):
@@ -82,81 +106,115 @@ def label_for(field):
     return mapping.get(field, field.replace("_", " ").title())
 
 
-app = dash.Dash(__name__)
+app = dash.Dash(
+    __name__,
+    meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
+)
 app.title = "D&D Monster Edition Converter"
 
 app.layout = html.Div(
     [
-        html.H1("D&D Monster Edition Converter"),
-        html.P("Bidirectional numeric stat-block conversion with prediction intervals."),
-        dcc.RadioItems(
-            id="direction",
-            options=[
-                {"label": label, "value": val}
-                for val, label in DIRECTION_LABELS.items()
+        html.Header(
+            className="hero",
+            children=[
+                html.H1("D&D Monster Edition Converter"),
+                html.P(
+                    "Bidirectional stat-block conversion with conformal prediction intervals.",
+                    className="subtitle",
+                ),
+                dcc.RadioItems(
+                    id="direction",
+                    className="direction-toggle",
+                    options=[
+                        {"label": label, "value": val}
+                        for val, label in DIRECTION_LABELS.items()
+                    ],
+                    value="4e_to_5e",
+                ),
             ],
-            value="4e_to_5e",
-            labelStyle={"display": "inline-block", "marginRight": "15px"},
         ),
-        html.Hr(),
-        dcc.Tabs(
-            [
-                dcc.Tab(
-                    label="Convert",
+        html.Main(
+            className="container",
+            children=[
+                dcc.Tabs(
+                    className="tabs-container",
+                    parent_className="tabs-parent",
+                    value="convert",
                     children=[
-                        html.Div(
-                            [
+                        dcc.Tab(
+                            label="Convert",
+                            value="convert",
+                            className="custom-tab",
+                            selected_className="custom-tab custom-tab--selected",
+                            children=[
                                 html.Div(
-                                    [
-                                        html.H3(id="input-heading"),
-                                        html.Div(id="input-fields"),
+                                    className="tab-content",
+                                    children=[
+                                        html.Div(
+                                            className="convert-grid",
+                                            children=[
+                                                html.Section(
+                                                    className="card",
+                                                    children=[
+                                                        html.Span("Source", className="card-eyebrow"),
+                                                        html.H3(id="input-heading"),
+                                                        html.P(
+                                                            "Fill in the stats of your monster.",
+                                                            className="card-hint",
+                                                        ),
+                                                        html.Div(id="input-fields"),
+                                                    ],
+                                                ),
+                                                html.Section(
+                                                    className="card output-card",
+                                                    children=[
+                                                        html.Span("Converted", className="card-eyebrow"),
+                                                        html.H3(id="output-heading"),
+                                                        html.P(
+                                                            "Prediction with 80% interval.",
+                                                            className="card-hint",
+                                                        ),
+                                                        html.Div(id="output-fields"),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
                                     ],
-                                    style={
-                                        "display": "inline-block",
-                                        "verticalAlign": "top",
-                                        "width": "45%",
-                                    },
-                                ),
-                                html.Div(
-                                    [
-                                        html.H3(id="output-heading"),
-                                        html.Div(id="output-fields"),
-                                    ],
-                                    style={
-                                        "display": "inline-block",
-                                        "verticalAlign": "top",
-                                        "width": "50%",
-                                        "marginLeft": "5%",
-                                    },
                                 ),
                             ],
-                            style={"padding": "10px"},
+                        ),
+                        dcc.Tab(
+                            label="Explain",
+                            value="explain",
+                            className="custom-tab",
+                            selected_className="custom-tab custom-tab--selected",
+                            children=[
+                                html.Div(
+                                    className="tab-content",
+                                    children=[
+                                        html.Section(
+                                            className="card explain-intro",
+                                            children=[
+                                                html.H3("Fitted linear models"),
+                                                html.P(
+                                                    "Each model is ordinary least-squares on the "
+                                                    "matched training pairs. The interval is an "
+                                                    "80% scale-adaptive split-conformal prediction "
+                                                    "interval (nominal miscoverage α = 0.20). It "
+                                                    "grows or shrinks with the size of the prediction."
+                                                ),
+                                            ],
+                                        ),
+                                        html.Div(id="equations-list"),
+                                    ],
+                                ),
+                            ],
                         ),
                     ],
                 ),
-                dcc.Tab(
-                    label="Explain",
-                    children=[
-                        html.Div(
-                            [
-                                html.H3("Fitted linear models"),
-                                html.P(
-                                    "Each model is ordinary least-squares on the "
-                                    "matched training pairs. The interval is an "
-                                    "80% scale-adaptive split-conformal prediction "
-                                    "interval (nominal miscoverage α = 0.20). It "
-                                    "grows or shrinks with the size of the prediction."
-                                ),
-                                html.Div(id="equations-list"),
-                            ],
-                            style={"padding": "10px"},
-                        )
-                    ],
-                ),
-            ]
+            ],
         ),
     ],
-    style={"maxWidth": "1000px", "margin": "0 auto"},
 )
 
 
@@ -173,38 +231,60 @@ def update_layout(direction):
     input_fields, output_fields = fields_for_direction(direction)
 
     input_children = []
-    for f in input_fields:
+    for title, fields in group_fields(input_fields):
+        grid = []
+        for f in fields:
+            grid.append(
+                html.Div(
+                    className="field",
+                    children=[
+                        html.Label(label_for(f), className="field-label"),
+                        dcc.Input(
+                            id={"type": "input", "field": f},
+                            className="field-input",
+                            type="number",
+                            value="",
+                            placeholder="—",
+                        ),
+                    ],
+                )
+            )
         input_children.append(
             html.Div(
-                [
-                    html.Label(label_for(f)),
-                    dcc.Input(
-                        id={"type": "input", "field": f},
-                        type="number",
-                        value="",
-                        placeholder=label_for(f),
-                        style={"width": "120px"},
-                    ),
+                className="field-group",
+                children=[
+                    html.H4(title, className="field-group-title"),
+                    html.Div(grid, className="fields-grid"),
                 ],
-                style={"margin": "6px 0"},
             )
         )
 
     output_children = []
-    for f in output_fields:
+    for title, fields in group_fields(output_fields):
+        rows = []
+        for f in fields:
+            rows.append(
+                html.Div(
+                    className="stat-row",
+                    children=[
+                        html.Span(label_for(f), className="stat-label"),
+                        html.Div(
+                            id={"type": "output", "field": f},
+                            className="stat-value",
+                            children=[
+                                html.Span("—", className="stat-pred stat-empty"),
+                            ],
+                        ),
+                    ],
+                )
+            )
         output_children.append(
             html.Div(
-                [
-                    html.Label(label_for(f)),
-                    dcc.Input(
-                        id={"type": "output", "field": f},
-                        type="text",
-                        value="",
-                        readOnly=True,
-                        style={"width": "220px"},
-                    ),
+                className="field-group",
+                children=[
+                    html.H4(title, className="field-group-title"),
+                    html.Div(rows),
                 ],
-                style={"margin": "6px 0"},
             )
         )
 
@@ -216,8 +296,21 @@ def update_layout(direction):
     )
 
 
+def format_output(target, pred, low, high):
+    """Render a prediction and its interval as stat-value children."""
+    if target in ("cr_num", "damage_avg"):
+        pred_s, lo_s, hi_s = f"{pred:.2f}", f"{low:.2f}", f"{high:.2f}"
+    else:
+        pred_s, lo_s, hi_s = str(round(pred)), str(round(low)), str(round(high))
+    return [
+        html.Span(pred_s, className="stat-pred"),
+        html.Span(f"{lo_s} – {hi_s}", className="stat-interval",
+                  title="80% prediction interval"),
+    ]
+
+
 @app.callback(
-    Output({"type": "output", "field": ALL}, "value"),
+    Output({"type": "output", "field": ALL}, "children"),
     Input("direction", "value"),
     Input({"type": "input", "field": ALL}, "value"),
     prevent_initial_call=False,
@@ -225,25 +318,34 @@ def update_layout(direction):
 def compute_outputs(direction, input_values):
     # Match input values to their fields via the ALL pattern matching order.
     input_fields, output_fields = fields_for_direction(direction)
+    ctx = dash.callback_context
+    # A direction switch rebuilds the field components; this callback can fire
+    # against the stale DOM (old field set, new direction) and would return
+    # the wrong number of outputs. Skip those fires — the callback refires
+    # once the new components are in place.
+    if len(ctx.outputs_list) != len(output_fields):
+        raise PreventUpdate
     # Dash passes input_values in the order the components were created in the
     # layout callback. Rebuild the input state dictionary.
-    ctx = dash.callback_context
-    # The first trigger is direction; remaining are inputs in order.
-    values = [direction] + (input_values or [])
-    state = {}
     # ctx.inputs_list contains the IDs for the pattern-matched inputs.
     inputs_list = ctx.inputs_list
     # inputs_list is a list; first element is direction (dict without pattern),
     # rest are the pattern-matched inputs.
+    state = {}
+    input_ids = set()
     for item in inputs_list:
         if isinstance(item, list):
+            input_ids.update(entry["id"]["field"] for entry in item)
             for entry, val in zip(item, input_values or []):
                 field = entry["id"]["field"]
                 state[field] = val
         elif isinstance(item, dict) and item.get("id") == "direction":
             pass  # already known
+    if input_ids != set(input_fields):
+        raise PreventUpdate
 
-    results = {f: "" for f in output_fields}
+    empty = [html.Span("—", className="stat-pred stat-empty")]
+    results = {f: empty for f in output_fields}
     for key, model in MODELS.items():
         if model["direction"] != direction:
             continue
@@ -263,16 +365,13 @@ def compute_outputs(direction, input_values):
                 missing = True
                 break
         if missing:
-            results[target] = ""
+            results[target] = empty
             continue
         pred = sum(c * x for c, x in zip(model["coef"], xs)) + model["intercept"]
         q_rel = model.get("conformal_quantile_relative", model.get("conformal_quantile", 0))
         low, high = pred * (1 - q_rel), pred * (1 + q_rel)
         low = max(low, 0.0)
-        if target in ("cr_num", "damage_avg"):
-            results[target] = f"{pred:.2f}  ({low:.2f} – {high:.2f})"
-        else:
-            results[target] = f"{round(pred)}  ({round(low)} – {round(high)})"
+        results[target] = format_output(target, pred, low, high)
 
     return [results[f] for f in output_fields]
 
@@ -283,27 +382,33 @@ def render_equations(_):
         return html.P("No models found. Run models/fit_models.py first.")
     children = []
     for direction in ["4e_to_5e", "5e_to_4e"]:
-        children.append(html.H3(DIRECTION_LABELS[direction]))
+        children.append(html.H3(DIRECTION_LABELS[direction], className="direction-heading"))
         for key, model in MODELS.items():
             if model["direction"] != direction:
                 continue
-            children.append(html.H4(label_for(model["target"])))
-            children.append(html.P(html.Code(model["equation"])))
             children.append(
-                html.Ul(
-                    [
-                        html.Li(f"Features: {', '.join(model['features'])}"),
-                        html.Li(f"R² = {model['r2']}"),
-                        html.Li(f"MAE = {model['mae']}"),
-                        html.Li(f"Baseline MAE = {model['baseline_mae']}"),
-                        html.Li(
-                            f"80% relative half-width = {model.get('conformal_quantile_relative', model.get('conformal_quantile', 0))} "
-                            f"(test coverage {model['test_coverage']})"
+                html.Div(
+                    className="card model-card",
+                    children=[
+                        html.H4(label_for(model["target"])),
+                        html.Code(model["equation"], className="equation"),
+                        html.Ul(
+                            className="metrics",
+                            children=[
+                                html.Li(f"features: {', '.join(model['features'])}"),
+                                html.Li(f"R² = {model['r2']}"),
+                                html.Li(f"MAE = {model['mae']}"),
+                                html.Li(f"baseline MAE = {model['baseline_mae']}"),
+                                html.Li(
+                                    f"80% rel half-width = {model.get('conformal_quantile_relative', model.get('conformal_quantile', 0))} "
+                                    f"(coverage {model['test_coverage']})"
+                                ),
+                                html.Li(
+                                    f"n = {model['n']} (train {model['n_train']} / cal {model['n_cal']} / test {model['n_test']})"
+                                ),
+                            ],
                         ),
-                        html.Li(
-                            f"n={model['n']} (train {model['n_train']}, cal {model['n_cal']}, test {model['n_test']})"
-                        ),
-                    ]
+                    ],
                 )
             )
     return children

@@ -135,8 +135,12 @@ def fit_spec(pairs, spec):
     if n < 15:
         return None
 
-    X_tr, y_tr, X_cal, y_cal, X_te, y_te = split_three(X, y)
-    model = LinearRegression(positive=True)
+    # Augment with a constant column so we can constrain the intercept to be
+    # non-negative as well. All source features are non-negative, so this
+    # guarantees predictions are never negative.
+    X_aug = np.column_stack([np.ones(n, dtype=float), X])
+    X_tr, y_tr, X_cal, y_cal, X_te, y_te = split_three(X_aug, y)
+    model = LinearRegression(fit_intercept=False, positive=True)
     model.fit(X_tr, y_tr)
 
     y_cal_pred = model.predict(X_cal)
@@ -158,8 +162,8 @@ def fit_spec(pairs, spec):
         "n_train": len(y_tr),
         "n_cal": len(y_cal),
         "n_test": len(y_te),
-        "intercept": round(float(model.intercept_), 4),
-        "coef": [round(float(c), 6) for c in model.coef_],
+        "intercept": round(float(model.coef_[0]), 4),
+        "coef": [round(float(c), 6) for c in model.coef_[1:]],
         "alpha": ALPHA,
         "conformal_quantile_relative": round(q_rel, 4),
         "test_coverage": round(float(coverage), 3),

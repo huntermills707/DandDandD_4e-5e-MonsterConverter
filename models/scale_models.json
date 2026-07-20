@@ -1,0 +1,248 @@
+{
+  "4e": {
+    "axis": "level",
+    "n_monsters": 479,
+    "stats": {
+      "hp": {
+        "kind": "multiplicative",
+        "slope": 0.101866,
+        "intercept": 3.2926,
+        "per_step_ratio": 1.107235,
+        "r2": 0.215,
+        "n": 479
+      },
+      "ac": {
+        "kind": "additive",
+        "slope": 1.040795,
+        "intercept": 13.7937,
+        "per_step_ratio": null,
+        "r2": 0.953,
+        "n": 479
+      },
+      "attack_bonus": {
+        "kind": "additive",
+        "slope": 0.9688,
+        "intercept": 4.5405,
+        "per_step_ratio": null,
+        "r2": 0.961,
+        "n": 479
+      },
+      "damage_avg": {
+        "kind": "multiplicative",
+        "slope": 0.047027,
+        "intercept": 1.9402,
+        "per_step_ratio": 1.048151,
+        "r2": 0.608,
+        "n": 438
+      },
+      "ability_str": {
+        "kind": "additive",
+        "slope": 0.552244,
+        "intercept": 12.631,
+        "per_step_ratio": null,
+        "r2": 0.464,
+        "n": 478
+      },
+      "ability_dex": {
+        "kind": "additive",
+        "slope": 0.328089,
+        "intercept": 13.3484,
+        "per_step_ratio": null,
+        "r2": 0.252,
+        "n": 478
+      },
+      "ability_con": {
+        "kind": "additive",
+        "slope": 0.518218,
+        "intercept": 12.2047,
+        "per_step_ratio": null,
+        "r2": 0.576,
+        "n": 478
+      },
+      "ability_int": {
+        "kind": "additive",
+        "slope": 0.353291,
+        "intercept": 5.807,
+        "per_step_ratio": null,
+        "r2": 0.19,
+        "n": 478
+      },
+      "ability_wis": {
+        "kind": "additive",
+        "slope": 0.312581,
+        "intercept": 10.9517,
+        "per_step_ratio": null,
+        "r2": 0.341,
+        "n": 478
+      },
+      "ability_cha": {
+        "kind": "additive",
+        "slope": 0.434099,
+        "intercept": 8.6275,
+        "per_step_ratio": null,
+        "r2": 0.293,
+        "n": 478
+      },
+      "fort": {
+        "kind": "additive",
+        "slope": 1.107697,
+        "intercept": 11.5827,
+        "per_step_ratio": null,
+        "r2": 0.919,
+        "n": 479
+      },
+      "ref": {
+        "kind": "additive",
+        "slope": 1.012084,
+        "intercept": 11.3895,
+        "per_step_ratio": null,
+        "r2": 0.934,
+        "n": 479
+      },
+      "will": {
+        "kind": "additive",
+        "slope": 1.033268,
+        "intercept": 10.5742,
+        "per_step_ratio": null,
+        "r2": 0.927,
+        "n": 479
+      }
+    }
+  },
+  "5e": {
+    "axis": "cr_num",
+    "n_monsters": 350,
+    "stats": {
+      "hp": {
+        "kind": "multiplicative",
+        "slope": 0.179484,
+        "intercept": 2.874,
+        "per_step_ratio": 1.1966,
+        "r2": 0.562,
+        "n": 350
+      },
+      "ac": {
+        "kind": "additive",
+        "slope": 0.442151,
+        "intercept": 11.9449,
+        "per_step_ratio": null,
+        "r2": 0.49,
+        "n": 350
+      },
+      "attack_bonus": {
+        "kind": "additive",
+        "slope": 0.532387,
+        "intercept": 3.7114,
+        "per_step_ratio": null,
+        "r2": 0.834,
+        "n": 275
+      },
+      "damage_avg": {
+        "kind": "multiplicative",
+        "slope": 0.065784,
+        "intercept": 1.9228,
+        "per_step_ratio": 1.067996,
+        "r2": 0.391,
+        "n": 275
+      },
+      "ability_str": {
+        "kind": "additive",
+        "slope": 0.751051,
+        "intercept": 11.8039,
+        "per_step_ratio": null,
+        "r2": 0.25,
+        "n": 350
+      },
+      "ability_dex": {
+        "kind": "additive",
+        "slope": 0.023234,
+        "intercept": 12.7845,
+        "per_step_ratio": null,
+        "r2": 0.002,
+        "n": 350
+      },
+      "ability_con": {
+        "kind": "additive",
+        "slope": 0.63051,
+        "intercept": 12.0953,
+        "per_step_ratio": null,
+        "r2": 0.668,
+        "n": 350
+      },
+      "ability_int": {
+        "kind": "additive",
+        "slope": 0.6149,
+        "intercept": 5.5567,
+        "per_step_ratio": null,
+        "r2": 0.39,
+        "n": 350
+      },
+      "ability_wis": {
+        "kind": "additive",
+        "slope": 0.301475,
+        "intercept": 10.4065,
+        "per_step_ratio": null,
+        "r2": 0.319,
+        "n": 350
+      },
+      "ability_cha": {
+        "kind": "additive",
+        "slope": 0.69025,
+        "intercept": 6.9591,
+        "per_step_ratio": null,
+        "r2": 0.479,
+        "n": 350
+      },
+      "save_str": {
+        "kind": "additive",
+        "slope": 0.340532,
+        "intercept": 3.1737,
+        "per_step_ratio": null,
+        "r2": 0.51,
+        "n": 337,
+        "pooled": true
+      },
+      "save_dex": {
+        "kind": "additive",
+        "slope": 0.167674,
+        "intercept": 3.6567,
+        "per_step_ratio": null,
+        "r2": 0.38,
+        "n": 65
+      },
+      "save_con": {
+        "kind": "additive",
+        "slope": 0.399434,
+        "intercept": 4.0013,
+        "per_step_ratio": null,
+        "r2": 0.59,
+        "n": 66
+      },
+      "save_int": {
+        "kind": "additive",
+        "slope": 0.340532,
+        "intercept": 3.1737,
+        "per_step_ratio": null,
+        "r2": 0.51,
+        "n": 337,
+        "pooled": true
+      },
+      "save_wis": {
+        "kind": "additive",
+        "slope": 0.346472,
+        "intercept": 2.2163,
+        "per_step_ratio": null,
+        "r2": 0.652,
+        "n": 95
+      },
+      "save_cha": {
+        "kind": "additive",
+        "slope": 0.40766,
+        "intercept": 2.8931,
+        "per_step_ratio": null,
+        "r2": 0.695,
+        "n": 71
+      }
+    }
+  }
+}
