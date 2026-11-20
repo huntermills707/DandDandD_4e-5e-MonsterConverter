@@ -94,7 +94,7 @@
 {"ability_cha": 27, "ability_con": 30, "ability_dex": 21, "ability_int": 21, "ability_str": 30, "ability_wis": 22, "ac": 22, "attack_bonus": 17, "cr_num": 23.0, "damage_avg": 31.0, "hp": 313, "id": "m5e-0094", "save_int": 12, "save_str": 17, "save_wis": 13, "xp": 32500}
 {"ability_cha": 8, "ability_con": 13, "ability_dex": 15, "ability_int": 7, "ability_str": 14, "ability_wis": 12, "ac": 13, "attack_bonus": 4, "cr_num": 2.0, "damage_avg": 7.0, "hp": 44, "id": "m5e-0095", "xp": 450}
 {"ability_cha": 8, "ability_con": 17, "ability_dex": 8, "ability_int": 6, "ability_str": 21, "ability_wis": 10, "ac": 12, "attack_bonus": 7, "cr_num": 4.0, "damage_avg": 14.0, "hp": 85, "id": "m5e-0096", "xp": 1100}
-{"ability_cha": 16, "ability_con": 13, "ability_dex": 20, "ability_int": 14, "ability_str": 3, "ability_wis": 12, "ac": 1, "cr_num": 1.0, "hp": 14, "id": "m5e-0097", "xp": 200}
+{"ability_cha": 16, "ability_con": 13, "ability_dex": 20, "ability_int": 14, "ability_str": 3, "ability_wis": 12, "ac": 15, "cr_num": 1.0, "hp": 14, "id": "m5e-0097", "xp": 200}
 {"ability_cha": 11, "ability_con": 14, "ability_dex": 17, "ability_int": 16, "ability_str": 1, "ability_wis": 10, "ac": 13, "attack_bonus": 5, "cr_num": 4.0, "damage_avg": 10.0, "hp": 40, "id": "m5e-0098", "xp": 1100}
 {"ability_cha": 11, "ability_con": 10, "ability_dex": 15, "ability_int": 14, "ability_str": 6, "ability_wis": 14, "ac": 12, "attack_bonus": 4, "cr_num": 0.125, "damage_avg": 4.0, "hp": 7, "id": "m5e-0099", "xp": 25}
 {"ability_cha": 1, "ability_con": 3, "ability_dex": 1, "ability_int": 1, "ability_str": 5, "ability_wis": 1, "ac": 5, "cr_num": 0.5, "hp": 1, "id": "m5e-0100", "xp": 100}
@@ -189,7 +189,7 @@
 {"ability_cha": 16, "ability_con": 18, "ability_dex": 12, "ability_int": 11, "ability_str": 18, "ability_wis": 11, "ac": 16, "cr_num": 4.0, "hp": 93, "id": "m5e-0189", "save_con": 6, "save_str": 6, "save_wis": 2, "xp": 1100}
 {"ability_cha": 12, "ability_con": 16, "ability_dex": 12, "ability_int": 9, "ability_str": 16, "ability_wis": 13, "ac": 16, "cr_num": 2.0, "hp": 45, "id": "m5e-0190", "xp": 450}
 {"ability_cha": 12, "ability_con": 18, "ability_dex": 12, "ability_int": 12, "ability_str": 18, "ability_wis": 11, "ac": 18, "cr_num": 2.0, "hp": 42, "id": "m5e-0191", "xp": 450}
-{"ability_cha": 6, "ability_con": 19, "ability_dex": 11, "ability_int": 6, "ability_str": 116, "ability_wis": 13, "ac": 14, "attack_bonus": 6, "cr_num": 5.0, "damage_avg": 12.0, "hp": 114, "id": "m5e-0192", "save_con": 7, "xp": 1800}
+{"ability_cha": 6, "ability_con": 19, "ability_dex": 11, "ability_int": 6, "ability_str": 16, "ability_wis": 13, "ac": 14, "attack_bonus": 6, "cr_num": 5.0, "damage_avg": 12.0, "hp": 114, "id": "m5e-0192", "save_con": 7, "xp": 1800}
 {"ability_cha": 7, "ability_con": 17, "ability_dex": 12, "ability_int": 3, "ability_str": 20, "ability_wis": 12, "ac": 13, "attack_bonus": 7, "cr_num": 3.0, "damage_avg": 14.0, "hp": 59, "id": "m5e-0193", "xp": 700}
 {"ability_cha": 13, "ability_con": 16, "ability_dex": 15, "ability_int": 10, "ability_str": 18, "ability_wis": 15, "ac": 12, "attack_bonus": 6, "cr_num": 2.0, "damage_avg": 11.0, "hp": 59, "id": "m5e-0194", "save_cha": 3, "save_dex": 4, "save_wis": 4, "xp": 450}
 {"ability_cha": 10, "ability_con": 13, "ability_dex": 12, "ability_int": 9, "ability_str": 16, "ability_wis": 12, "ac": 13, "attack_bonus": 5, "cr_num": 2.0, "damage_avg": 8.0, "hp": 33, "id": "m5e-0195", "xp": 450}
@@ -293,15 +293,15 @@
 {"ability_cha": 3, "ability_con": 10, "ability_dex": 14, "ability_int": 1, "ability_str": 10, "ability_wis": 10, "ac": 12, "attack_bonus": 4, "cr_num": 0.5, "damage_avg": 5.0, "hp": 13, "id": "m5e-0293", "xp": 100}
 {"ability_cha": 5, "ability_con": 10, "ability_dex": 16, "ability_int": 4, "ability_str": 11, "ability_wis": 12, "ac": 13, "attack_bonus": 5, "cr_num": 0.125, "damage_avg": 5.0, "hp": 9, "id": "m5e-0294", "xp": 25}
 {"ability_cha": 4, "ability_con": 13, "ability_dex": 16, "ability_int": 3, "ability_str": 12, "ability_wis": 12, "ac": 13, "attack_bonus": 3, "cr_num": 0.25, "damage_avg": 4.0, "hp": 11, "id": "m5e-0295", "xp": 50}
-{"ability_cha": 5, "ability_con": 11, "ability_dex": 10, "ability_int": 2, "ability_str": 12, "ability_wis": 10, "ac": 1, "attack_bonus": 3, "cr_num": 0.0, "damage_avg": 3.0, "hp": 4, "id": "m5e-0296", "xp": 10}
+{"ability_cha": 5, "ability_con": 11, "ability_dex": 10, "ability_int": 2, "ability_str": 12, "ability_wis": 10, "ac": 10, "attack_bonus": 3, "cr_num": 0.0, "damage_avg": 3.0, "hp": 4, "id": "m5e-0296", "xp": 10}
 {"ability_cha": 6, "ability_con": 8, "ability_dex": 16, "ability_int": 2, "ability_str": 5, "ability_wis": 14, "ac": 13, "cr_num": 0.0, "hp": 1, "id": "m5e-0297", "xp": 10}
 {"ability_cha": 4, "ability_con": 15, "ability_dex": 13, "ability_int": 1, "ability_str": 18, "ability_wis": 10, "ac": 12, "attack_bonus": 6, "cr_num": 2.0, "damage_avg": 13.0, "hp": 45, "id": "m5e-0298", "xp": 450}
 {"ability_cha": 7, "ability_con": 13, "ability_dex": 10, "ability_int": 3, "ability_str": 19, "ability_wis": 12, "ac": 12, "attack_bonus": 6, "cr_num": 3.0, "damage_avg": 21.0, "hp": 90, "id": "m5e-0299", "xp": 700}
 {"ability_cha": 8, "ability_con": 13, "ability_dex": 15, "ability_int": 3, "ability_str": 17, "ability_wis": 12, "ac": 12, "attack_bonus": 5, "cr_num": 1.0, "damage_avg": 7.0, "hp": 26, "id": "m5e-0300", "xp": 200}
-{"ability_cha": 3, "ability_con": 10, "ability_dex": 11, "ability_int": 1, "ability_str": 2, "ability_wis": 8, "ac": 1, "cr_num": 0.0, "hp": 2, "id": "m5e-0301", "xp": 10}
+{"ability_cha": 3, "ability_con": 10, "ability_dex": 11, "ability_int": 1, "ability_str": 2, "ability_wis": 8, "ac": 10, "cr_num": 0.0, "hp": 2, "id": "m5e-0301", "xp": 10}
 {"ability_cha": 6, "ability_con": 21, "ability_dex": 9, "ability_int": 3, "ability_str": 24, "ability_wis": 11, "ac": 13, "attack_bonus": 10, "cr_num": 6.0, "damage_avg": 25.0, "hp": 126, "id": "m5e-0302", "xp": 2300}
 {"ability_cha": 7, "ability_con": 12, "ability_dex": 14, "ability_int": 3, "ability_str": 13, "ability_wis": 12, "ac": 12, "attack_bonus": 3, "cr_num": 0.125, "damage_avg": 4.0, "hp": 5, "id": "m5e-0303", "xp": 25}
-{"ability_cha": 5, "ability_con": 13, "ability_dex": 10, "ability_int": 2, "ability_str": 14, "ability_wis": 10, "ac": 1, "attack_bonus": 2, "cr_num": 0.125, "damage_avg": 4.0, "hp": 11, "id": "m5e-0304", "xp": 25}
+{"ability_cha": 5, "ability_con": 13, "ability_dex": 10, "ability_int": 2, "ability_str": 14, "ability_wis": 10, "ac": 10, "attack_bonus": 2, "cr_num": 0.125, "damage_avg": 4.0, "hp": 11, "id": "m5e-0304", "xp": 25}
 {"ability_cha": 4, "ability_con": 11, "ability_dex": 15, "ability_int": 3, "ability_str": 4, "ability_wis": 10, "ac": 12, "cr_num": 0.0, "hp": 3, "id": "m5e-0305", "xp": 10}
 {"ability_cha": 7, "ability_con": 12, "ability_dex": 13, "ability_int": 2, "ability_str": 3, "ability_wis": 12, "ac": 11, "cr_num": 0.0, "hp": 1, "id": "m5e-0306", "xp": 10}
 {"ability_cha": 7, "ability_con": 10, "ability_dex": 15, "ability_int": 3, "ability_str": 14, "ability_wis": 14, "ac": 12, "attack_bonus": 4, "cr_num": 0.25, "damage_avg": 5.0, "hp": 13, "id": "m5e-0307", "xp": 50}
@@ -323,13 +323,13 @@
 {"ability_cha": 1, "ability_con": 10, "ability_dex": 13, "ability_int": 1, "ability_str": 3, "ability_wis": 7, "ac": 12, "attack_bonus": 3, "cr_num": 0.5, "damage_avg": 10.0, "hp": 22, "id": "m5e-0323", "xp": 100}
 {"ability_cha": 3, "ability_con": 11, "ability_dex": 18, "ability_int": 1, "ability_str": 8, "ability_wis": 10, "ac": 14, "attack_bonus": 6, "cr_num": 2.0, "damage_avg": 7.0, "hp": 36, "id": "m5e-0324", "xp": 450}
 {"ability_cha": 2, "ability_con": 9, "ability_dex": 16, "ability_int": 1, "ability_str": 13, "ability_wis": 7, "ac": 13, "attack_bonus": 5, "cr_num": 1.0, "damage_avg": 14.0, "hp": 28, "id": "m5e-0325", "xp": 200}
-{"ability_cha": 3, "ability_con": 9, "ability_dex": 11, "ability_int": 2, "ability_str": 9, "ability_wis": 10, "ac": 1, "attack_bonus": 2, "cr_num": 0.25, "damage_avg": 7.0, "hp": 24, "id": "m5e-0326", "xp": 50}
+{"ability_cha": 3, "ability_con": 9, "ability_dex": 11, "ability_int": 2, "ability_str": 9, "ability_wis": 10, "ac": 10, "attack_bonus": 2, "cr_num": 0.25, "damage_avg": 7.0, "hp": 24, "id": "m5e-0326", "xp": 50}
 {"ability_cha": 6, "ability_con": 8, "ability_dex": 14, "ability_int": 3, "ability_str": 6, "ability_wis": 12, "ac": 12, "attack_bonus": 4, "cr_num": 0.25, "damage_avg": 7.0, "hp": 24, "id": "m5e-0327", "xp": 50}
 {"ability_cha": 8, "ability_con": 14, "ability_dex": 15, "ability_int": 3, "ability_str": 17, "ability_wis": 12, "ac": 12, "attack_bonus": 5, "cr_num": 1.0, "damage_avg": 8.0, "hp": 37, "id": "m5e-0328", "xp": 200}
 {"ability_cha": 7, "ability_con": 13, "ability_dex": 12, "ability_int": 2, "ability_str": 18, "ability_wis": 12, "ac": 11, "attack_bonus": 4, "cr_num": 0.5, "damage_avg": 11.0, "hp": 19, "id": "m5e-0329", "xp": 100}
 {"ability_cha": 8, "ability_con": 14, "ability_dex": 13, "ability_int": 7, "ability_str": 18, "ability_wis": 12, "ac": 13, "cr_num": 3.0, "hp": 75, "id": "m5e-0330", "xp": 700}
 {"ability_cha": 8, "ability_con": 13, "ability_dex": 13, "ability_int": 7, "ability_str": 16, "ability_wis": 11, "ac": 13, "attack_bonus": 5, "cr_num": 0.5, "damage_avg": 10.0, "hp": 26, "id": "m5e-0331", "xp": 100}
-{"ability_cha": 11, "ability_con": 10, "ability_dex": 10, "ability_int": 10, "ability_str": 10, "ability_wis": 14, "ac": 1, "attack_bonus": 2, "cr_num": 0.25, "damage_avg": 2.0, "hp": 9, "id": "m5e-0332", "xp": 50}
+{"ability_cha": 11, "ability_con": 10, "ability_dex": 10, "ability_int": 10, "ability_str": 10, "ability_wis": 14, "ac": 10, "attack_bonus": 2, "cr_num": 0.25, "damage_avg": 2.0, "hp": 9, "id": "m5e-0332", "xp": 50}
 {"ability_cha": 16, "ability_con": 12, "ability_dex": 14, "ability_int": 20, "ability_str": 10, "ability_wis": 15, "ac": 12, "cr_num": 12.0, "hp": 99, "id": "m5e-0333", "save_int": 9, "save_wis": 6, "xp": 8400}
 {"ability_cha": 10, "ability_con": 14, "ability_dex": 16, "ability_int": 13, "ability_str": 11, "ability_wis": 11, "ac": 15, "attack_bonus": 7, "cr_num": 8.0, "damage_avg": 7.0, "hp": 78, "id": "m5e-0334", "save_dex": 7, "save_int": 5, "xp": 3900}
 {"ability_cha": 10, "ability_con": 12, "ability_dex": 12, "ability_int": 10, "ability_str": 11, "ability_wis": 10, "ac": 12, "attack_bonus": 3, "cr_num": 0.125, "damage_avg": 5.0, "hp": 11, "id": "m5e-0335", "xp": 25}

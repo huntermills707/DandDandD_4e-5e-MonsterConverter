@@ -28,14 +28,17 @@ TYPE_WORD = (
     r"giant|humanoid|monstrosity|ooze|plant|undead"
 )
 TYPE5_RE = re.compile(rf"^.*{SIZE_FUZZY}\s+\w*.*?({TYPE_WORD})", re.I)
-AC_RE = re.compile(r"Armor Class (\d+)(?: \(([^)]+)\))?")
+# OCR sometimes splits two-digit AC ("Armor Class 1 5")
+AC_RE = re.compile(r"Armor Class (\d \d(?!\d)|\d+)(?: \(([^)]+)\))?")
 HP_RE = re.compile(r"Hit Points (\d+) \(([^)]+)\)")
 SPEED_RE = re.compile(r"^Speed (.+)$")
 STR_HDR_RE = re.compile(r"^STR\b")
 # Score line anchor: digits followed by a short (however garbled)
-# parenthetical modifier; only the score is used, so the modifier's OCR
-# noise doesn't matter. "ll" -> 11, "2. (-4)", "18 (+4i", "11 (;t-0)" all ok.
-SCORE_RE = re.compile(r"([0-9l]+)[.,]?\s*[({][^)]{0,7}[)}]?")
+# parenthetical modifier. "ll" -> 11, "2. (-4)", "18 (+4i", "11 (;t-0)" all
+# ok. The modifier is captured only to repair stray OCR digits in the score
+# (see repair_score); its own noise otherwise doesn't matter.
+SCORE_RE = re.compile(r"([0-9l]+)[.,]?\s*[({]([^)]{0,7})[)}]?")
+MOD_VALUE_RE = re.compile(r"([+-])\s*(\d+)")
 SAVE_RE = re.compile(r"^Saving Throws (.+)$")
 SKILL_RE = re.compile(r"^Skills (.+)$")
 SENSES_RE = re.compile(r"^Senses (.+)$")
@@ -100,6 +103,25 @@ def name_plausible(ln: str) -> bool:
     return sum(c.isupper() for c in alpha) / len(alpha) > 0.6
 
 
+def repair_score(raw, mod_text):
+    """Ability score from OCR text, checked against its printed modifier:
+    a score outside 1-30, or one whose modifier disagrees, is repaired by
+    dropping a stray leading/trailing digit if that makes it consistent
+    ("116 (+3)" -> 16)."""
+    score = int(raw.replace("l", "1"))
+    m = MOD_VALUE_RE.search(mod_text.replace("−", "-").replace("–", "-"))
+    if not m:
+        return score
+    mod = int(m.group(2)) * (1 if m.group(1) == "+" else -1)
+    if 1 <= score <= 30 and (score - 10) // 2 == mod:
+        return score
+    digits = str(score)
+    for cand in (digits[1:], digits[:-1]):
+        if cand and 1 <= int(cand) <= 30 and (int(cand) - 10) // 2 == mod:
+            return int(cand)
+    return score
+
+
 def parse_block(name, type_line, block_lines):
     mon = {}
     if name:
@@ -109,7 +131,7 @@ def parse_block(name, type_line, block_lines):
     text = " ".join(block_lines)
     for i, ln in enumerate(block_lines):
         if m := AC_RE.search(ln):
-            mon["ac"] = int(m.group(1))
+            mon["ac"] = int(m.group(1).replace(" ", ""))
             if m.group(2):
                 mon["ac_note"] = m.group(2)
         elif m := HP_RE.search(ln):
@@ -120,11 +142,9 @@ def parse_block(name, type_line, block_lines):
         elif STR_HDR_RE.match(ln):
             # scores can be split across lines or under a wrapped header
             blob = " ".join(block_lines[i + 1 : i + 4]).replace("{", "(").replace("}", ")")
-            scores = [s.replace("l", "1") for s in SCORE_RE.findall(blob)]
+            scores = [repair_score(s, mod) for s, mod in SCORE_RE.findall(blob)]
             if len(scores) >= 6:
-                mon["abilities"] = {
-                    ab: int(s) for ab, s in zip(ABILITIES, scores[:6])
-                }
+                mon["abilities"] = dict(zip(ABILITIES, scores[:6]))
         elif m := SAVE_RE.match(ln):
             mon["saves"] = {
                 k.replace("lnt", "Int").lower(): int(v)

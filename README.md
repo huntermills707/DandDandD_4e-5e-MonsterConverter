@@ -131,14 +131,37 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
    - Default (`metadata`, `many`): **154 training pairs** (87 same + 67
      related; 154 unique 4e, 104 unique 5e monsters).
 5. [x] **Modeling** — `models/fit_models.py` fits per-field linear
-   regressions in both directions (4e→5e and 5e→4e). Models now cover HP,
-   AC, attack bonus, damage average, CR/level, all six ability scores, and
-   saving throws (5e saves from 4e defenses; 4e defenses from 5e saves/abilities).
-   Each model uses multiple source-edition covariates. Coefficients and the
-   intercept are constrained to be non-negative, so all point predictions are
-   non-negative. Each model reports a scale-adaptive split-conformal 80%
-   prediction interval alongside point predictions (relative residual, lower
-   bound clamped at 0).
+   regressions in both directions (4e→5e and 5e→4e): HP, AC, attack bonus,
+   damage average, CR/level, all six ability scores, and saving throws (5e
+   saves from 4e defenses; 4e defenses from 5e saves/abilities).
+   - **Design goal: easy, explainable conversion.** Each stat converts by
+     a short rule a GM can apply by hand — the matching stat in the other
+     edition, the level/CR scale, and 4e role adjustments — e.g.
+     *5e HP = 0.18·HP + 4.7·level − 2 (solo +72)*. All rules are listed in
+     [`models/conversion_rules.md`](models/conversion_rules.md).
+   - **How the rules were chosen** (`models/experiments.py`, all under the
+     same grouped CV): adding **4e role** (minion / elite / solo; for
+     5e→4e, the role the converted monster should play) was the largest
+     gain (median MAE 70% → 59% of the mean baseline, R² 0.48 → 0.60).
+     Dropping from many covariates per stat to counterpart + level/CR, and
+     rounding coefficients to 2 significant figures, cost nothing
+     measurable. Terms are then pruned: a counterpart stat with a negative
+     coefficient is dropped, and any term whose removal raises CV error by
+     under 1% goes (nested CV: median 59.8% → 60.2%). Log-scale HP/damage,
+     ridge, and the original non-negative constraint did no better.
+   - **Evaluation**: repeated grouped 5-fold CV (×10). Pairs sharing a 4e
+     or 5e monster form one group and never straddle train and test;
+     metrics are scored on held-out same-creature pairs and reported as
+     mean ± sd over repeats. The final equations are fit on all pairs.
+   - **Intervals**: 80% cross-conformal, `result ± q·(result + c)` with `c`
+     the median target value — near-constant for small stats, proportional
+     for large ones. Coverage is measured with nested CV and reported per
+     third of the prediction range; it beat both purely absolute intervals
+     (big monsters under-covered: 46% for 5e→4e HP) and purely relative
+     ones (small values under-covered).
+   - **Data checks**: grouped CV exposed OCR errors in the 5e parse (an
+     Otyugh STR of 116, six ACs of 1); the parser now repairs split AC
+     digits and checks each ability score against its printed modifier.
 6. [x] **Web app** — `app/app.py` is a bidirectional Dash dashboard with a
    direction switch (4e → 5e / 5e → 4e), a **Convert** tab showing predicted
    stats with intervals, and an **Explain** tab listing every fitted equation,
@@ -200,6 +223,10 @@ parser special-casing.
 
 # fit per-field linear models and save equations
 .venv/bin/python models/fit_models.py
+
+# compare model designs under the same grouped CV; honest cost of pruning
+.venv/bin/python -m models.experiments --fields
+.venv/bin/python -m models.experiments --nested-selection
 
 # fit within-edition scaling curves (level/CR -> stat)
 .venv/bin/python models/fit_scale_models.py

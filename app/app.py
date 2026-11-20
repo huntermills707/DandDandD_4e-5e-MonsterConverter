@@ -7,6 +7,7 @@ Tabs:
 """
 
 import json
+import math
 from pathlib import Path
 
 import dash
@@ -49,6 +50,49 @@ FIELD_GROUPS = [
 
 FIELD_ORDER = [f for _, fields in FIELD_GROUPS for f in fields]
 
+# 4e role tiers; models take them as indicator features ("role_elite", ...)
+# chosen with the role selector rather than typed in.
+ROLE_OPTIONS = [
+    {"label": "Standard", "value": "standard"},
+    {"label": "Minion", "value": "minion"},
+    {"label": "Elite", "value": "elite"},
+    {"label": "Solo", "value": "solo"},
+]
+
+
+def is_role_feature(field):
+    return field.startswith("role_")
+
+
+def predict_with_interval(model, values):
+    """Point prediction and 80% interval for one model.
+
+    values: {feature: float}. Mirrors models/fit_models.LinearDesign:
+    optional log1p feature/target transforms, then the model's interval
+    rule ("scaled", "relative", "absolute", or "log").
+    """
+    log_features = set(model.get("log_features", []))
+    z = model["intercept"]
+    for coef, feature in zip(model["coef"], model["features"]):
+        x = values[feature]
+        if feature in log_features:
+            x = math.log1p(max(x, 0.0))
+        z += coef * x
+    clip = model.get("clip_min", 0.0)
+    pred = max(math.expm1(z) if model.get("log_target") else z, clip)
+    q = model.get("conformal_quantile", model.get("conformal_quantile_relative", 0.0))
+    kind = model.get("interval", "relative")
+    if kind == "scaled":
+        half = q * (abs(pred) + model.get("interval_offset", 0.0))
+        low, high = pred - half, pred + half
+    elif kind == "absolute":
+        low, high = pred - q, pred + q
+    elif kind == "log":
+        low, high = math.expm1(math.log1p(pred) - q), math.expm1(math.log1p(pred) + q)
+    else:
+        low, high = pred * (1 - q), pred * (1 + q)
+    return pred, max(low, clip), high
+
 
 def fields_for_direction(direction):
     """Return (input_fields, output_fields) for the chosen direction."""
@@ -57,7 +101,7 @@ def fields_for_direction(direction):
     for key, model in MODELS.items():
         if model["direction"] != direction:
             continue
-        input_fields.update(model["features"])
+        input_fields.update(f for f in model["features"] if not is_role_feature(f))
         output_fields.add(model["target"])
     # deterministic order
     input_fields = [f for f in FIELD_ORDER if f in input_fields]
@@ -162,6 +206,19 @@ app.layout = html.Div(
                                                             "Fill in the stats of your monster.",
                                                             className="card-hint",
                                                         ),
+                                                        html.Div(
+                                                            className="field-group",
+                                                            children=[
+                                                                html.H4(id="role-label",
+                                                                        className="field-group-title"),
+                                                                dcc.RadioItems(
+                                                                    id="role",
+                                                                    className="direction-toggle role-toggle",
+                                                                    options=ROLE_OPTIONS,
+                                                                    value="standard",
+                                                                ),
+                                                            ],
+                                                        ),
                                                         html.Div(id="input-fields"),
                                                     ],
                                                 ),
@@ -197,15 +254,23 @@ app.layout = html.Div(
                                             children=[
                                                 html.H3("Fitted linear models"),
                                                 html.P(
-                                                    "Each model is a linear fit on the matched "
-                                                    "training pairs. Fit quality is from repeated "
+                                                    "Each rule is a short linear equation meant to "
+                                                    "be usable by hand: the matching stat in the "
+                                                    "other edition, the level/CR scale, and 4e role "
+                                                    "adjustments, with terms kept only if they "
+                                                    "measurably help. Fit quality is from repeated "
                                                     "grouped cross-validation (variants of one "
                                                     "monster never straddle train and test), scored "
                                                     "on same-creature pairs; ± is the spread over "
-                                                    "repeats. The interval is an 80% scale-adaptive "
-                                                    "cross-conformal prediction interval (nominal "
-                                                    "miscoverage α = 0.20). It grows or shrinks with "
-                                                    "the size of the prediction."
+                                                    "repeats. 4e role (minion / elite / solo vs. "
+                                                    "standard) enters as indicator terms; for 5e → 4e "
+                                                    "it is the role the converted monster should "
+                                                    "play. The interval is an 80% cross-conformal "
+                                                    "prediction interval (nominal miscoverage "
+                                                    "α = 0.20) whose width scales with |prediction| "
+                                                    "+ a typical value of the stat, so it is roughly "
+                                                    "constant for small stats and proportional for "
+                                                    "large ones."
                                                 ),
                                             ],
                                         ),
@@ -227,6 +292,7 @@ app.layout = html.Div(
     Output("output-heading", "children"),
     Output("input-fields", "children"),
     Output("output-fields", "children"),
+    Output("role-label", "children"),
     Input("direction", "value"),
 )
 def update_layout(direction):
@@ -292,11 +358,13 @@ def update_layout(direction):
             )
         )
 
+    role_label = "4e role" if source_edition == "4e" else "Target 4e role"
     return (
         f"Input ({source_edition})",
         f"Output ({target_edition})",
         input_children,
         output_children,
+        role_label,
     )
 
 
@@ -317,9 +385,10 @@ def format_output(target, pred, low, high):
     Output({"type": "output", "field": ALL}, "children"),
     Input("direction", "value"),
     Input({"type": "input", "field": ALL}, "value"),
+    Input("role", "value"),
     prevent_initial_call=False,
 )
-def compute_outputs(direction, input_values):
+def compute_outputs(direction, input_values, role):
     # Match input values to their fields via the ALL pattern matching order.
     input_fields, output_fields = fields_for_direction(direction)
     ctx = dash.callback_context
@@ -347,6 +416,8 @@ def compute_outputs(direction, input_values):
             pass  # already known
     if input_ids != set(input_fields):
         raise PreventUpdate
+    for tier in ("minion", "elite", "solo"):
+        state[f"role_{tier}"] = 1.0 if role == tier else 0.0
 
     empty = [html.Span("—", className="stat-pred stat-empty")]
     results = {f: empty for f in output_fields}
@@ -355,26 +426,16 @@ def compute_outputs(direction, input_values):
             continue
         target = model["target"]
         features = model["features"]
-        # collect feature values
-        xs = []
-        missing = False
+        values = {}
         for feat in features:
-            val = state.get(feat)
-            if val in (None, ""):
-                missing = True
-                break
             try:
-                xs.append(float(val))
+                values[feat] = float(state.get(feat))
             except (TypeError, ValueError):
-                missing = True
                 break
-        if missing:
+        if len(values) != len(features):
             results[target] = empty
             continue
-        pred = sum(c * x for c, x in zip(model["coef"], xs)) + model["intercept"]
-        q_rel = model.get("conformal_quantile_relative", model.get("conformal_quantile", 0))
-        low, high = pred * (1 - q_rel), pred * (1 + q_rel)
-        low = max(low, 0.0)
+        pred, low, high = predict_with_interval(model, values)
         results[target] = format_output(target, pred, low, high)
 
     return [results[f] for f in output_fields]
@@ -404,8 +465,13 @@ def render_equations(_):
                                 html.Li(f"MAE = {model['mae']} ± {model.get('mae_sd', 0)}"),
                                 html.Li(f"baseline MAE = {model['baseline_mae']}"),
                                 html.Li(
-                                    f"80% rel half-width = {model.get('conformal_quantile_relative', model.get('conformal_quantile', 0))} "
-                                    f"(coverage {model['test_coverage']})"
+                                    f"80% range: {model.get('interval_rule', model.get('interval', ''))} "
+                                    f"(coverage {model['test_coverage']}; by low/mid/high third "
+                                    f"{model.get('coverage_by_third', '?')})"
+                                ),
+                                html.Li(
+                                    "pruned terms: "
+                                    + (", ".join(model.get("dropped_features", [])) or "none")
                                 ),
                                 html.Li(
                                     f"n = {model['n']} pairs, {model.get('n_groups', '?')} groups, "

@@ -18,7 +18,7 @@ import json
 
 import numpy as np
 
-from models.fit_models import MODEL_SPECS, NonNegLinear, extract, source_target
+from models.fit_models import DEFAULT_DESIGN, MODEL_SPECS, ROLE_FEATURES, extract, source_target
 from pipeline.build_pairs import MM4_PATH, MM5_PATH, load_config, load_srd_reference, match_records
 
 N_FOLDS = 5
@@ -36,11 +36,14 @@ def key(p):
 
 def fit_predict(train, test, spec):
     src, tgt = source_target(spec)
-    Xtr, ytr, *_ = extract(train, src, tgt, spec["features"], spec["target"])
-    Xte, yte, *_ = extract(test, src, tgt, spec["features"], spec["target"])
+    features = spec["features"] + ROLE_FEATURES
+    Xtr, ytr, *_ = extract(train, src, tgt, features, spec["target"])
+    Xte, yte, *_ = extract(test, src, tgt, features, spec["target"])
     if len(ytr) < 15 or len(yte) == 0:
         return None
-    pred = NonNegLinear().fit(Xtr, ytr).predict(Xte)
+    model = DEFAULT_DESIGN()
+    model.features = features
+    pred = model.fit(Xtr, ytr).predict(Xte)
     return yte, pred, np.full_like(yte, ytr.mean())
 
 
