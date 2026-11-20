@@ -160,10 +160,7 @@ def hero(title, subtitle, toggle):
             children=[
                 html.Div(
                     className="brand",
-                    children=[
-                        html.Img(src=app.get_asset_url("d20.svg"), className="brand-mark", alt=""),
-                        html.Div([html.H1(title), html.P(subtitle, className="subtitle")]),
-                    ],
+                    children=[html.H1(title), html.P(subtitle, className="subtitle")],
                 ),
                 toggle,
             ],
