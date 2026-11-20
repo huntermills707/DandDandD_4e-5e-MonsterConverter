@@ -162,6 +162,18 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
      60.2% → 59.2–61.2%), mostly by chasing noise in the small 5e
      saving-throw sets. Minion slopes can't be scored: all 6 minion pairs are
      related, not same-creature.
+   - **Not adopted: elite/solo slopes for 4e→5e saves.** They looked
+     promising in that comparison, so they were rechecked on fresh folds
+     (nested CV, ×10, two seeds). CON save error fell from 84% to 66% of
+     the baseline and WIS from 77% to 72%, but CHA and DEX got worse. Each
+     save has only 27–35 scored pairs, over half of DEX/WIS/CHA solos, so
+     the slopes rest on a handful of monsters. The selected CON rule also
+     dropped level for standard monsters (*CON save = 6, elite
+     +0.15·level, solo +0.35·level*), a flat +6 at any level, with 59%
+     coverage in the low third. Keeping level and adding the slopes gives a
+     sensible shape (about +0.1 per level for standard, +0.2 elite, +0.27
+     solo) and cuts WIS/CHA error by 4–6%. That variant was picked after
+     seeing results, though, and still hurts DEX.
    - **Evaluation**: repeated grouped 5-fold CV (×10). Pairs sharing a 4e
      or 5e monster form one group and never straddle train and test;
      metrics are scored on held-out same-creature pairs and reported as
