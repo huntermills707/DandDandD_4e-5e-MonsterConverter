@@ -197,11 +197,15 @@ app.layout = html.Div(
                                             children=[
                                                 html.H3("Fitted linear models"),
                                                 html.P(
-                                                    "Each model is ordinary least-squares on the "
-                                                    "matched training pairs. The interval is an "
-                                                    "80% scale-adaptive split-conformal prediction "
-                                                    "interval (nominal miscoverage α = 0.20). It "
-                                                    "grows or shrinks with the size of the prediction."
+                                                    "Each model is a linear fit on the matched "
+                                                    "training pairs. Fit quality is from repeated "
+                                                    "grouped cross-validation (variants of one "
+                                                    "monster never straddle train and test), scored "
+                                                    "on same-creature pairs; ± is the spread over "
+                                                    "repeats. The interval is an 80% scale-adaptive "
+                                                    "cross-conformal prediction interval (nominal "
+                                                    "miscoverage α = 0.20). It grows or shrinks with "
+                                                    "the size of the prediction."
                                                 ),
                                             ],
                                         ),
@@ -396,15 +400,16 @@ def render_equations(_):
                             className="metrics",
                             children=[
                                 html.Li(f"features: {', '.join(model['features'])}"),
-                                html.Li(f"R² = {model['r2']}"),
-                                html.Li(f"MAE = {model['mae']}"),
+                                html.Li(f"R² = {model['r2']} ± {model.get('r2_sd', 0)}"),
+                                html.Li(f"MAE = {model['mae']} ± {model.get('mae_sd', 0)}"),
                                 html.Li(f"baseline MAE = {model['baseline_mae']}"),
                                 html.Li(
                                     f"80% rel half-width = {model.get('conformal_quantile_relative', model.get('conformal_quantile', 0))} "
                                     f"(coverage {model['test_coverage']})"
                                 ),
                                 html.Li(
-                                    f"n = {model['n']} (train {model['n_train']} / cal {model['n_cal']} / test {model['n_test']})"
+                                    f"n = {model['n']} pairs, {model.get('n_groups', '?')} groups, "
+                                    f"{model.get('n_eval', '?')} same-creature pairs scored"
                                 ),
                             ],
                         ),

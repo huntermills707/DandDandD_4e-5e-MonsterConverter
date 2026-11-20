@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
 """Fit per-field linear regressions for both 4e -> 5e and 5e -> 4e.
 
-Each model uses a small set of source-edition covariates.  Conformal
-prediction gives per-prediction intervals with a nominal coverage level
-(default 90%).  Results are saved to models/models.json for the Dash app.
+Evaluation is repeated grouped K-fold cross-validation. Pairs are grouped by
+connected monsters (pipeline/build_pairs.assign_groups), so variants of one
+5e monster never sit on both sides of a split. Metrics are computed on
+held-out same-creature pairs (the ones with a real ground truth) and
+reported as mean and standard deviation over repeats.
+
+Prediction intervals are cross-conformal and scale-adaptive: the relative
+residual quantile q gives [pred * (1 - q), pred * (1 + q)]. Coverage is
+estimated honestly with nested CV (q chosen on the training folds only).
+The shipped equation and q are fit on all pairs.
+
+Results go to models/models.json (for the app) and models/eval_report.json.
 """
 
 import argparse
@@ -14,7 +23,6 @@ from pathlib import Path
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error, r2_score
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -23,6 +31,9 @@ from pipeline.datasets import SOURCES, load_pairs, resolve_source  # noqa: E402
 MODELS_DIR = ROOT / "models"
 
 ALPHA = 0.20  # nominal miscoverage; 80% scale-adaptive prediction intervals
+N_FOLDS = 5
+N_REPEATS = 10
+MIN_N = 15
 
 # Each spec: direction, target field on target side, list of source features.
 MODEL_SPECS = [
@@ -61,6 +72,23 @@ MODEL_SPECS = [
 ]
 
 
+class NonNegLinear:
+    """Linear model with non-negative coefficients and intercept, so
+    predictions from non-negative stats are never negative."""
+
+    name = "nonneg_linear"
+
+    def fit(self, X, y):
+        self.model = LinearRegression(fit_intercept=False, positive=True)
+        self.model.fit(np.column_stack([np.ones(len(X)), X]), y)
+        self.intercept_ = float(self.model.coef_[0])
+        self.coef_ = self.model.coef_[1:]
+        return self
+
+    def predict(self, X):
+        return self.intercept_ + X @ self.coef_
+
+
 def source_target(spec):
     if spec["direction"] == "4e_to_5e":
         return "4e", "5e"
@@ -68,106 +96,125 @@ def source_target(spec):
 
 
 def extract(pairs, source_prefix, target_prefix, features, target):
-    X, y = [], []
-    for p in pairs:
-        src = p[source_prefix]
-        tgt = p[target_prefix]
-        if tgt.get(target) is None:
-            continue
-        if any(src.get(f) is None for f in features):
+    """Rows with the target and every feature present.
+    Returns X, y, groups, is_same (same-creature pair)."""
+    X, y, groups, same = [], [], [], []
+    for k, p in enumerate(pairs):
+        src, tgt = p[source_prefix], p[target_prefix]
+        if tgt.get(target) is None or any(src.get(f) is None for f in features):
             continue
         X.append([src[f] for f in features])
         y.append(tgt[target])
-    return np.array(X, dtype=float), np.array(y, dtype=float)
+        groups.append(p.get("group", k))
+        same.append(p.get("match_type", "same") == "same")
+    return (np.array(X, dtype=float).reshape(-1, len(features)), np.array(y, dtype=float),
+            np.array(groups), np.array(same, dtype=bool))
 
 
-def split_three(X, y, train_frac=0.6, cal_frac=0.2, random_state=42):
-    n = len(y)
-    rng = np.random.default_rng(random_state)
-    idx = np.arange(n)
-    rng.shuffle(idx)
-    n_train = int(n * train_frac)
-    n_cal = int(n * cal_frac)
-    train_idx = idx[:n_train]
-    cal_idx = idx[n_train : n_train + n_cal]
-    test_idx = idx[n_train + n_cal :]
-    return (
-        X[train_idx], y[train_idx],
-        X[cal_idx], y[cal_idx],
-        X[test_idx], y[test_idx],
-    )
+def grouped_folds(groups, n_folds, seed):
+    """Test-index arrays: unique groups shuffled and dealt into folds."""
+    uniq = np.unique(groups)
+    order = np.random.default_rng(seed).permutation(uniq)
+    fold_of = {g: i % n_folds for i, g in enumerate(order)}
+    folds = np.array([fold_of[g] for g in groups])
+    return [np.flatnonzero(folds == f) for f in range(n_folds)]
 
 
-def conformal_quantile(residuals, alpha):
-    """Conservative split-conformal quantile."""
-    n = len(residuals)
+def conformal_q(rel_residuals, alpha):
+    """Conservative conformal quantile of relative residuals."""
+    n = len(rel_residuals)
     if n == 0:
         return 0.0
-    q_level = math.ceil((n + 1) * (1 - alpha)) / n
-    q_level = min(q_level, 1.0)
-    return float(np.quantile(residuals, q_level, method="higher"))
+    level = min(math.ceil((n + 1) * (1 - alpha)) / n, 1.0)
+    return float(np.quantile(rel_residuals, level, method="higher"))
 
 
-def conformal_relative_quantile(y_true, y_pred, alpha):
-    """Conservative split-conformal quantile of relative residuals.
-
-    Returns a fraction q such that the interval
-        [pred * (1 - q), pred * (1 + q)]
-    has approximate (1 - alpha) coverage on the calibration set.
-    """
-    n = len(y_true)
-    if n == 0:
-        return 0.0
-    rel = np.abs(y_true - y_pred) / np.maximum(np.abs(y_pred), 1e-6)
-    q_level = math.ceil((n + 1) * (1 - alpha)) / n
-    q_level = min(q_level, 1.0)
-    return float(np.quantile(rel, q_level, method="higher"))
+def relative(y, pred):
+    return np.abs(y - pred) / np.maximum(np.abs(pred), 1e-6)
 
 
-def fit_spec(pairs, spec):
+def oof_predictions(X, y, groups, make_model, n_folds, seed):
+    pred = np.empty_like(y)
+    for test in grouped_folds(groups, n_folds, seed):
+        train = np.setdiff1d(np.arange(len(y)), test)
+        pred[test] = make_model().fit(X[train], y[train]).predict(X[test])
+    return pred
+
+
+def cross_validate(X, y, groups, is_same, make_model, alpha=ALPHA,
+                   n_folds=N_FOLDS, n_repeats=N_REPEATS):
+    """Repeated grouped CV. Returns per-repeat metric arrays and the pooled
+    out-of-fold relative residuals (all pairs) for the final interval."""
+    per = {k: [] for k in ("r2", "mae", "baseline_mae", "coverage", "rel_width")}
+    oof_rel = []
+    for rep in range(n_repeats):
+        seed = 1000 + rep
+        pred = np.empty_like(y)
+        base = np.empty_like(y)
+        lo = np.empty_like(y)
+        hi = np.empty_like(y)
+        for f, test in enumerate(grouped_folds(groups, n_folds, seed)):
+            train = np.setdiff1d(np.arange(len(y)), test)
+            model = make_model().fit(X[train], y[train])
+            pred[test] = model.predict(X[test])
+            base[test] = y[train].mean()
+            # nested: interval width chosen on the training folds only
+            inner = oof_predictions(X[train], y[train], groups[train], make_model,
+                                    n_folds, seed * 31 + f)
+            q = conformal_q(relative(y[train], inner), alpha)
+            lo[test] = np.maximum(pred[test] * (1 - q), 0.0)
+            hi[test] = pred[test] * (1 + q)
+        oof_rel.append(relative(y, pred))
+
+        m = is_same
+        yt, pt = y[m], pred[m]
+        ss_tot = ((yt - yt.mean()) ** 2).sum()
+        per["r2"].append(1 - ((yt - pt) ** 2).sum() / ss_tot if ss_tot else np.nan)
+        per["mae"].append(np.abs(yt - pt).mean())
+        per["baseline_mae"].append(np.abs(yt - base[m]).mean())
+        per["coverage"].append(((yt >= lo[m]) & (yt <= hi[m])).mean())
+        per["rel_width"].append(np.mean((hi[m] - lo[m]) / np.maximum(np.abs(yt), 1e-6)))
+    return {k: np.array(v) for k, v in per.items()}, np.concatenate(oof_rel)
+
+
+def fit_spec(pairs, spec, make_model=NonNegLinear, alpha=ALPHA,
+             n_folds=N_FOLDS, n_repeats=N_REPEATS):
     source_prefix, target_prefix = source_target(spec)
-    features = spec["features"]
-    target = spec["target"]
-    X, y = extract(pairs, source_prefix, target_prefix, features, target)
-    n = len(y)
-    if n < 15:
+    features, target = spec["features"], spec["target"]
+    X, y, groups, is_same = extract(pairs, source_prefix, target_prefix, features, target)
+    if len(y) < MIN_N or is_same.sum() < N_FOLDS or len(np.unique(groups)) < N_FOLDS:
         return None
 
-    # Augment with a constant column so we can constrain the intercept to be
-    # non-negative as well. All source features are non-negative, so this
-    # guarantees predictions are never negative.
-    X_aug = np.column_stack([np.ones(n, dtype=float), X])
-    X_tr, y_tr, X_cal, y_cal, X_te, y_te = split_three(X_aug, y)
-    model = LinearRegression(fit_intercept=False, positive=True)
-    model.fit(X_tr, y_tr)
+    per, oof_rel = cross_validate(X, y, groups, is_same, make_model, alpha, n_folds, n_repeats)
+    final = make_model().fit(X, y)
 
-    y_cal_pred = model.predict(X_cal)
-    q_rel = conformal_relative_quantile(y_cal, y_cal_pred, ALPHA)
+    def stat(k, nd=3):
+        return round(float(np.nanmean(per[k])), nd), round(float(np.nanstd(per[k])), nd)
 
-    y_te_pred = model.predict(X_te)
-    coverage = np.mean(
-        (y_te >= y_te_pred * (1 - q_rel)) & (y_te <= y_te_pred * (1 + q_rel))
-    )
-    baseline_pred = np.full_like(y_te, y_tr.mean())
-
+    r2, r2_sd = stat("r2")
+    mae, mae_sd = stat("mae")
+    base, base_sd = stat("baseline_mae")
+    cov, cov_sd = stat("coverage")
     return {
         "direction": spec["direction"],
         "source_edition": source_prefix,
         "target_edition": target_prefix,
         "target": target,
         "features": features,
-        "n": n,
-        "n_train": len(y_tr),
-        "n_cal": len(y_cal),
-        "n_test": len(y_te),
-        "intercept": round(float(model.coef_[0]), 4),
-        "coef": [round(float(c), 6) for c in model.coef_[1:]],
-        "alpha": ALPHA,
-        "conformal_quantile_relative": round(q_rel, 4),
-        "test_coverage": round(float(coverage), 3),
-        "r2": round(r2_score(y_te, y_te_pred), 3),
-        "mae": round(mean_absolute_error(y_te, y_te_pred), 3),
-        "baseline_mae": round(mean_absolute_error(y_te, baseline_pred), 3),
+        "estimator": make_model.name,
+        "n": int(len(y)),
+        "n_eval": int(is_same.sum()),
+        "n_groups": int(len(np.unique(groups))),
+        "cv": f"grouped {n_folds}-fold x{n_repeats}, scored on same-creature pairs",
+        "intercept": round(float(final.intercept_), 4),
+        "coef": [round(float(c), 6) for c in final.coef_],
+        "alpha": alpha,
+        "conformal_quantile_relative": round(conformal_q(oof_rel, alpha), 4),
+        "r2": r2, "r2_sd": r2_sd,
+        "mae": mae, "mae_sd": mae_sd,
+        "baseline_mae": base, "baseline_mae_sd": base_sd,
+        "test_coverage": cov, "test_coverage_sd": cov_sd,
+        "interval_rel_width": round(float(np.mean(per["rel_width"])), 3),
     }
 
 
@@ -183,6 +230,24 @@ def equation_string(model):
     return f"{target} = {eq} {sign} {abs(inter):.4f}"
 
 
+def fit_all(pairs, make_model=NonNegLinear, verbose=True):
+    models = {}
+    for spec in MODEL_SPECS:
+        key = f"{spec['direction']}/{spec['target']}"
+        result = fit_spec(pairs, spec, make_model)
+        if result is None:
+            if verbose:
+                print(f"  skipping {key}: not enough data")
+            continue
+        result["equation"] = equation_string(result)
+        models[key] = result
+        if verbose:
+            print(f"{key:26s} R²={result['r2']:6.2f}±{result['r2_sd']:.2f}  "
+                  f"MAE={result['mae']:7.2f} (base {result['baseline_mae']:7.2f})  "
+                  f"cov={result['test_coverage']:.2f}")
+    return models
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--data", choices=SOURCES, default="auto",
@@ -192,18 +257,7 @@ def main(argv=None):
 
     source = resolve_source(args.data)
     print(f"Data source: {source}")
-    pairs = load_pairs(source)
-    models = {}
-    for spec in MODEL_SPECS:
-        key = f"{spec['direction']}/{spec['target']}"
-        result = fit_spec(pairs, spec)
-        if result is None:
-            print(f"  skipping {key}: not enough data")
-            continue
-        result["equation"] = equation_string(result)
-        models[key] = result
-        print(f"{key}: R²={result['r2']}, MAE={result['mae']}, "
-              f"coverage={result['test_coverage']}, q_rel={result['conformal_quantile_relative']}")
+    models = fit_all(load_pairs(source))
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     for name in ("models.json", "eval_report.json"):

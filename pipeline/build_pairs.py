@@ -263,6 +263,28 @@ def match_records(records_4e, records_5e, srd_ref, cfg):
     return pairs, scorer
 
 
+def assign_groups(training):
+    """Give each pair a CV group: connected components of the 4e/5e monster
+    graph, so pairs sharing a monster (variants of one 5e base, a 4e monster
+    with two 5e matches) never straddle train and test. Ids are numbered by
+    first appearance and carry no names."""
+    parent = {}
+
+    def find(x):
+        parent.setdefault(x, x)
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for p in training:
+        a, b = find(("4e", p["4e"]["name"])), find(("5e", p["5e"]["name"]))
+        parent[a] = b
+    ids = {}
+    for p in training:
+        p["group"] = ids.setdefault(find(("5e", p["5e"]["name"])), len(ids))
+
+
 def flatten(prefix: str, side: dict, flat: dict):
     for k, v in side.items():
         if k == "flags":
@@ -317,6 +339,7 @@ def write_outputs(pairs):
         writer.writerows(rows)
 
     training = [p for p in pairs if not p["review"]]
+    assign_groups(training)
     with open(TRAINING_PATH, "w") as f:
         for p in training:
             f.write(json.dumps(p, sort_keys=True) + "\n")

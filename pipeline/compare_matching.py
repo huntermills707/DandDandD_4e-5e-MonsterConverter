@@ -17,9 +17,8 @@ import itertools
 import json
 
 import numpy as np
-from sklearn.linear_model import LinearRegression
 
-from models.fit_models import MODEL_SPECS, extract, source_target
+from models.fit_models import MODEL_SPECS, NonNegLinear, extract, source_target
 from pipeline.build_pairs import MM4_PATH, MM5_PATH, load_config, load_srd_reference, match_records
 
 N_FOLDS = 5
@@ -37,13 +36,11 @@ def key(p):
 
 def fit_predict(train, test, spec):
     src, tgt = source_target(spec)
-    Xtr, ytr = extract(train, src, tgt, spec["features"], spec["target"])
-    Xte, yte = extract(test, src, tgt, spec["features"], spec["target"])
+    Xtr, ytr, *_ = extract(train, src, tgt, spec["features"], spec["target"])
+    Xte, yte, *_ = extract(test, src, tgt, spec["features"], spec["target"])
     if len(ytr) < 15 or len(yte) == 0:
         return None
-    model = LinearRegression(fit_intercept=False, positive=True)
-    model.fit(np.column_stack([np.ones(len(ytr)), Xtr]), ytr)
-    pred = model.predict(np.column_stack([np.ones(len(yte)), Xte]))
+    pred = NonNegLinear().fit(Xtr, ytr).predict(Xte)
     return yte, pred, np.full_like(yte, ytr.mean())
 
 

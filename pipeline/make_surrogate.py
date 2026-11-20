@@ -62,6 +62,7 @@ def main():
             # fixed vocabularies from pipeline/matcher.py, no names
             "reason": p["reason"],
             "match_type": p["match_type"],
+            "group": p["group"],  # opaque CV group (connected monsters)
             "4e": mask(p["4e"], "4e", f"pair-{i:04d}/4e"),
             "5e": mask(p["5e"], "5e", f"pair-{i:04d}/5e"),
         }
