@@ -174,32 +174,75 @@ def label_for(field):
     return mapping.get(field, field.replace("_", " ").title())
 
 
+def feature_label(feature):
+    """Readable feature name: "role_solo*cr_num" -> "solo × CR"."""
+    parts = []
+    for part in feature.split("*"):
+        parts.append(part[len("role_"):] if is_role_feature(part) else label_for(part))
+    return " × ".join(parts)
+
+
+# 5e challenge ratings, for showing a converted CR as the nearest legal one.
+VALID_CRS = [0, 0.125, 0.25, 0.5] + list(range(1, 31))
+CR_LABELS = {0.125: "1/8", 0.25: "1/4", 0.5: "1/2"}
+
+
+def nearest_cr_label(x):
+    cr = min(VALID_CRS, key=lambda c: abs(c - x))
+    return CR_LABELS.get(cr, str(int(cr)))
+
+
 app = dash.Dash(
     __name__,
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
 )
 app.title = "D&D Monster Edition Converter"
 
-app.layout = html.Div(
-    [
-        html.Header(
-            className="hero",
+
+def hero(title, subtitle, toggle):
+    return html.Header(
+        className="hero",
+        children=html.Div(
+            className="hero-inner",
             children=[
-                html.H1("D&D Monster Edition Converter"),
-                html.P(
-                    "Bidirectional stat-block conversion with conformal prediction intervals.",
-                    className="subtitle",
-                ),
-                dcc.RadioItems(
-                    id="direction",
-                    className="direction-toggle",
-                    options=[
-                        {"label": label, "value": val}
-                        for val, label in DIRECTION_LABELS.items()
+                html.Div(
+                    className="brand",
+                    children=[
+                        html.Img(src=app.get_asset_url("d20.svg"), className="brand-mark", alt=""),
+                        html.Div([html.H1(title), html.P(subtitle, className="subtitle")]),
                     ],
-                    value="4e_to_5e",
                 ),
+                toggle,
             ],
+        ),
+    )
+
+
+def tab(label, value, children):
+    return dcc.Tab(
+        label=label,
+        value=value,
+        className="custom-tab",
+        selected_className="custom-tab--selected",
+        children=html.Div(className="tab-body", children=children),
+    )
+
+
+app.layout = html.Div(
+    className="page",
+    children=[
+        hero(
+            "D&D Monster Edition Converter",
+            "Bidirectional stat-block conversion with 80% conformal prediction intervals.",
+            dcc.RadioItems(
+                id="direction",
+                className="direction-toggle",
+                options=[
+                    {"label": label, "value": val}
+                    for val, label in DIRECTION_LABELS.items()
+                ],
+                value="4e_to_5e",
+            ),
         ),
         html.Main(
             className="container",
@@ -207,110 +250,107 @@ app.layout = html.Div(
                 dcc.Tabs(
                     className="tabs-container",
                     parent_className="tabs-parent",
+                    mobile_breakpoint=0,
                     value="convert",
                     children=[
-                        dcc.Tab(
-                            label="Convert",
-                            value="convert",
-                            className="custom-tab",
-                            selected_className="custom-tab custom-tab--selected",
-                            children=[
-                                html.Div(
-                                    className="tab-content",
-                                    children=[
-                                        html.Div(
-                                            className="convert-grid",
-                                            children=[
-                                                html.Section(
-                                                    className="card",
-                                                    children=[
-                                                        html.Span("Source", className="card-eyebrow"),
-                                                        html.H3(id="input-heading"),
-                                                        html.P(
-                                                            "Fill in the stats of your monster.",
-                                                            className="card-hint",
-                                                        ),
-                                                        html.Div(
-                                                            className="field-group",
-                                                            children=[
-                                                                html.H4(id="role-label",
-                                                                        className="field-group-title"),
-                                                                dcc.RadioItems(
-                                                                    id="role",
-                                                                    className="direction-toggle role-toggle",
-                                                                    options=ROLE_OPTIONS,
-                                                                    value="standard",
-                                                                ),
-                                                            ],
-                                                        ),
-                                                        html.Div(id="input-fields"),
-                                                    ],
-                                                ),
-                                                html.Section(
-                                                    className="card output-card",
-                                                    children=[
-                                                        html.Span("Converted", className="card-eyebrow"),
-                                                        html.H3(id="output-heading"),
-                                                        html.P(
-                                                            "Prediction with 80% interval.",
-                                                            className="card-hint",
-                                                        ),
-                                                        html.Div(id="output-fields"),
-                                                    ],
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                        dcc.Tab(
-                            label="Explain",
-                            value="explain",
-                            className="custom-tab",
-                            selected_className="custom-tab custom-tab--selected",
-                            children=[
-                                html.Div(
-                                    className="tab-content",
-                                    children=[
-                                        html.Section(
-                                            className="card explain-intro",
-                                            children=[
-                                                html.H3("Fitted linear models"),
-                                                html.P(
-                                                    "Each rule is a short linear equation meant to "
-                                                    "be usable by hand: the matching stat in the "
-                                                    "other edition, the level/CR scale, and 4e role "
-                                                    "adjustments, with terms kept only if they "
-                                                    "measurably help. Rules are fit with Huber loss "
-                                                    "(a few unusual monsters can't drag a rule), "
-                                                    "counting related pairs (a 4e variant matched to "
-                                                    "its 5e base creature) at half weight. Fit quality is from repeated "
-                                                    "grouped cross-validation (variants of one "
-                                                    "monster never straddle train and test), scored "
-                                                    "on same-creature pairs; ± is the spread over "
-                                                    "repeats. 4e role (minion / elite / solo vs. "
-                                                    "standard) enters as indicator terms; for 5e → 4e "
-                                                    "it is the role the converted monster should "
-                                                    "play. 4e multiplies solo HP by 4, so the solo HP "
-                                                    "bonus is a slope on CR, and 4e "
-                                                    "minions always have 1 HP. The interval is an 80% cross-conformal "
-                                                    "prediction interval (nominal miscoverage "
-                                                    "α = 0.20) whose width scales with |prediction| "
-                                                    "+ a typical value of the stat, so it is roughly "
-                                                    "constant for small stats and proportional for "
-                                                    "large ones."
-                                                ),
-                                            ],
-                                        ),
-                                        html.Div(id="equations-list"),
-                                    ],
-                                ),
-                            ],
-                        ),
+                        tab("Convert", "convert", [
+                            html.Div(
+                                className="convert-grid",
+                                children=[
+                                    html.Section(
+                                        className="card",
+                                        children=[
+                                            html.Span("Source", className="card-eyebrow"),
+                                            html.H3(id="input-heading"),
+                                            html.P(
+                                                "Type in your monster's stats. Outputs update "
+                                                "as soon as a rule has every stat it needs.",
+                                                className="card-hint",
+                                            ),
+                                            html.Div(
+                                                className="field-group",
+                                                children=[
+                                                    html.H4(id="role-label",
+                                                            className="field-group-title"),
+                                                    dcc.RadioItems(
+                                                        id="role",
+                                                        className="direction-toggle role-toggle",
+                                                        options=ROLE_OPTIONS,
+                                                        value="standard",
+                                                    ),
+                                                ],
+                                            ),
+                                            html.Div(id="input-fields"),
+                                        ],
+                                    ),
+                                    html.Section(
+                                        className="card output-card",
+                                        children=[
+                                            html.Span("Converted", className="card-eyebrow"),
+                                            html.H3(id="output-heading"),
+                                            html.P(
+                                                [
+                                                    "Predicted value, with the ",
+                                                    html.Span("80%", className="legend-chip"),
+                                                    " range that real conversions fall in "
+                                                    "about 4 times in 5.",
+                                                ],
+                                                className="card-hint",
+                                            ),
+                                            html.Div(id="output-fields"),
+                                        ],
+                                    ),
+                                ],
+                            ),
+                        ]),
+                        tab("Explain", "explain", [
+                            html.Section(
+                                className="card explain-intro",
+                                children=[
+                                    html.Span("Method", className="card-eyebrow"),
+                                    html.H3("Fitted linear models"),
+                                    html.P(
+                                        "Each rule is a short linear equation meant to "
+                                        "be usable by hand: the matching stat in the "
+                                        "other edition, the level/CR scale, and 4e role "
+                                        "adjustments, with terms kept only if they "
+                                        "measurably help. Rules are fit with Huber loss "
+                                        "(a few unusual monsters can't drag a rule), "
+                                        "counting related pairs (a 4e variant matched to "
+                                        "its 5e base creature) at half weight."
+                                    ),
+                                    html.P(
+                                        "Fit quality is from repeated "
+                                        "grouped cross-validation (variants of one "
+                                        "monster never straddle train and test), scored "
+                                        "on same-creature pairs; ± is the spread over "
+                                        "repeats. 4e role (minion / elite / solo vs. "
+                                        "standard) enters as indicator terms; for 5e → 4e "
+                                        "it is the role the converted monster should "
+                                        "play. 4e multiplies solo HP by 4, so the solo HP "
+                                        "bonus is a slope on CR, and 4e "
+                                        "minions always have 1 HP."
+                                    ),
+                                    html.P(
+                                        "The range is an 80% cross-conformal "
+                                        "prediction interval (nominal miscoverage "
+                                        "α = 0.20) whose width scales with |prediction| "
+                                        "+ a typical value of the stat, so it is roughly "
+                                        "constant for small stats and proportional for "
+                                        "large ones."
+                                    ),
+                                ],
+                            ),
+                            html.Div(id="equations-list"),
+                        ]),
                     ],
                 ),
             ],
+        ),
+        html.Footer(
+            className="footer",
+            children="Numeric input only — no rule-book text is hosted. "
+                     "Models: models/models.json.",
         ),
     ],
 )
@@ -370,9 +410,7 @@ def update_layout(direction):
                         html.Div(
                             id={"type": "output", "field": f},
                             className="stat-value",
-                            children=[
-                                html.Span("—", className="stat-pred stat-empty"),
-                            ],
+                            children=EMPTY_OUTPUT,
                         ),
                     ],
                 )
@@ -382,19 +420,25 @@ def update_layout(direction):
                 className="field-group",
                 children=[
                     html.H4(title, className="field-group-title"),
-                    html.Div(rows),
+                    html.Div(rows, className="stat-list"),
                 ],
             )
         )
 
     role_label = "4e role" if source_edition == "4e" else "Target 4e role"
     return (
-        f"Input ({source_edition})",
-        f"Output ({target_edition})",
+        f"{source_edition} monster",
+        f"{target_edition} conversion",
         input_children,
         output_children,
         role_label,
     )
+
+
+# The interval slot is always present (empty when there is no range) so the
+# predictions line up in one column.
+NO_INTERVAL = html.Span(className="stat-interval stat-interval-none")
+EMPTY_OUTPUT = [html.Span("—", className="stat-pred stat-empty"), NO_INTERVAL]
 
 
 def format_output(target, pred, low, high):
@@ -403,11 +447,16 @@ def format_output(target, pred, low, high):
         pred_s, lo_s, hi_s = f"{pred:.2f}", f"{low:.2f}", f"{high:.2f}"
     else:
         pred_s, lo_s, hi_s = str(round(pred)), str(round(low)), str(round(high))
-    return [
-        html.Span(pred_s, className="stat-pred"),
-        html.Span(f"{lo_s} – {hi_s}", className="stat-interval",
-                  title="80% prediction interval"),
-    ]
+    children = [html.Span(pred_s, className="stat-pred")]
+    if target == "cr_num":
+        children.append(html.Span(f"≈ CR {nearest_cr_label(pred)}", className="stat-note",
+                                  title="nearest legal challenge rating"))
+    if (lo_s, hi_s) != (pred_s, pred_s):
+        children.append(html.Span(f"{lo_s} – {hi_s}", className="stat-interval",
+                                  title="80% prediction interval"))
+    else:
+        children.append(NO_INTERVAL)  # fixed by role (minion HP = 1)
+    return children
 
 
 @app.callback(
@@ -422,10 +471,10 @@ def compute_outputs(direction, input_values, role):
     input_fields, output_fields = fields_for_direction(direction)
     ctx = dash.callback_context
     # A direction switch rebuilds the field components; this callback can fire
-    # against the stale DOM (old field set, new direction) and would return
-    # the wrong number of outputs. Skip those fires — the callback refires
-    # once the new components are in place.
-    if len(ctx.outputs_list) != len(output_fields):
+    # against the stale DOM (old field set, new direction). Skip those fires —
+    # the callback refires once the new components are in place.
+    output_ids = [entry["id"]["field"] for entry in ctx.outputs_list]
+    if sorted(output_ids) != sorted(output_fields):
         raise PreventUpdate
     # Dash passes input_values in the order the components were created in the
     # layout callback. Rebuild the input state dictionary.
@@ -448,7 +497,7 @@ def compute_outputs(direction, input_values, role):
     for tier in ("minion", "elite", "solo"):
         state[f"role_{tier}"] = 1.0 if role == tier else 0.0
 
-    empty = [html.Span("—", className="stat-pred stat-empty")]
+    empty = EMPTY_OUTPUT
     results = {f: empty for f in output_fields}
     for key, model in MODELS.items():
         if model["direction"] != direction:
@@ -461,50 +510,84 @@ def compute_outputs(direction, input_values, role):
         pred, low, high = predict_with_interval(model, values, role)
         results[target] = format_output(target, pred, low, high)
 
-    return [results[f] for f in output_fields]
+    # Dash fills pattern-matched outputs in ctx.outputs_list order, which after
+    # a rebuild need not match the field order: key every result by its id.
+    return [results[f] for f in output_ids]
+
+
+def metric(label, value, detail=None, bar=None):
+    """A labelled metric tile; bar is a 0–1 fill fraction."""
+    children = [
+        html.Span(label, className="metric-label"),
+        html.Span(value, className="metric-value"),
+    ]
+    if bar is not None:
+        children.append(html.Div(
+            className="metric-bar",
+            children=html.Div(style={"width": f"{max(0.0, min(bar, 1.0)) * 100:.0f}%"}),
+        ))
+    if detail:
+        children.append(html.Span(detail, className="metric-detail"))
+    return html.Div(children, className="metric")
+
+
+def model_card(model):
+    r2, mae, base = model["r2"], model["mae"], model["baseline_mae"]
+    gain = 1 - mae / base if base else 0.0
+    thirds = model.get("coverage_by_third")
+    thirds_s = " · ".join(f"{c * 100:.0f}" for c in thirds) if thirds else "?"
+    dropped = [feature_label(f) for f in model.get("dropped_features", [])]
+    return html.Div(
+        className="card model-card",
+        children=[
+            html.Div(
+                className="model-head",
+                children=[
+                    html.H4(label_for(model["target"])),
+                    html.Span(f"n = {model['n']}", className="badge",
+                              title=f"{model['n']} pairs, {model.get('n_groups', '?')} groups, "
+                                    f"{model.get('n_eval', '?')} same-creature pairs scored"),
+                ],
+            ),
+            html.Code(model["equation"], className="equation"),
+            html.Div(
+                className="interval-rule",
+                children=[html.Span("80% range", className="legend-chip"),
+                          html.Code(model.get("interval_rule", model.get("interval", "")))],
+            ),
+            html.Div(
+                className="metric-grid",
+                children=[
+                    metric("R²", f"{r2:.2f}", f"± {model.get('r2_sd', 0)}", bar=r2),
+                    metric("MAE", f"{mae:.2f}", f"{gain:.0%} below baseline {base:.2f}",
+                           bar=gain),
+                    metric("Coverage", f"{model['test_coverage']:.0%}",
+                           f"by third: {thirds_s}", bar=model["test_coverage"]),
+                ],
+            ),
+            html.P(
+                className="model-foot",
+                children=[
+                    html.Span("Uses "),
+                    *[html.Span(feature_label(f), className="tag") for f in model["features"]],
+                    html.Span(" · pruned: " + (", ".join(dropped) or "none")),
+                ],
+            ),
+        ],
+    )
 
 
 @app.callback(Output("equations-list", "children"), Input("equations-list", "id"))
 def render_equations(_):
     if not MODELS:
-        return html.P("No models found. Run models/fit_models.py first.")
+        return html.P("No models found. Run models/fit_models.py first.", className="card-hint")
     children = []
     for direction in ["4e_to_5e", "5e_to_4e"]:
         children.append(html.H3(DIRECTION_LABELS[direction], className="direction-heading"))
-        for key, model in MODELS.items():
-            if model["direction"] != direction:
-                continue
-            children.append(
-                html.Div(
-                    className="card model-card",
-                    children=[
-                        html.H4(label_for(model["target"])),
-                        html.Code(model["equation"], className="equation"),
-                        html.Ul(
-                            className="metrics",
-                            children=[
-                                html.Li(f"features: {', '.join(model['features'])}"),
-                                html.Li(f"R² = {model['r2']} ± {model.get('r2_sd', 0)}"),
-                                html.Li(f"MAE = {model['mae']} ± {model.get('mae_sd', 0)}"),
-                                html.Li(f"baseline MAE = {model['baseline_mae']}"),
-                                html.Li(
-                                    f"80% range: {model.get('interval_rule', model.get('interval', ''))} "
-                                    f"(coverage {model['test_coverage']}; by low/mid/high third "
-                                    f"{model.get('coverage_by_third', '?')})"
-                                ),
-                                html.Li(
-                                    "pruned terms: "
-                                    + (", ".join(model.get("dropped_features", [])) or "none")
-                                ),
-                                html.Li(
-                                    f"n = {model['n']} pairs, {model.get('n_groups', '?')} groups, "
-                                    f"{model.get('n_eval', '?')} same-creature pairs scored"
-                                ),
-                            ],
-                        ),
-                    ],
-                )
-            )
+        children.append(html.Div(
+            className="model-grid",
+            children=[model_card(m) for m in MODELS.values() if m["direction"] == direction],
+        ))
     return children
 
 

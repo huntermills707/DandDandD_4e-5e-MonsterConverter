@@ -152,132 +152,155 @@ app = dash.Dash(
 )
 app.title = "D&D Monster Difficulty Scaler"
 
-app.layout = html.Div(
-    [
-        html.Header(
-            className="hero",
+def hero(title, subtitle, toggle):
+    return html.Header(
+        className="hero",
+        children=html.Div(
+            className="hero-inner",
             children=[
-                html.H1("D&D Monster Difficulty Scaler"),
-                html.P(
-                    "Strengthen or weaken a monster within its edition: "
-                    "stats shift along the edition's own scaling curve.",
-                    className="subtitle",
-                ),
-                dcc.RadioItems(
-                    id="scale-edition",
-                    className="direction-toggle",
-                    options=[
-                        {"label": label, "value": val}
-                        for val, label in EDITION_LABELS.items()
+                html.Div(
+                    className="brand",
+                    children=[
+                        html.Img(src=app.get_asset_url("d20.svg"), className="brand-mark", alt=""),
+                        html.Div([html.H1(title), html.P(subtitle, className="subtitle")]),
                     ],
-                    value="4e",
                 ),
+                toggle,
             ],
+        ),
+    )
+
+
+def tab(label, value, children):
+    return dcc.Tab(
+        label=label,
+        value=value,
+        className="custom-tab",
+        selected_className="custom-tab--selected",
+        children=html.Div(className="tab-body", children=children),
+    )
+
+
+def axis_hint(edition):
+    return "1 – 40" if edition == "4e" else "0 – 30, or 1/8 = 0.125 …"
+
+
+def axis_control(which, edition):
+    """Level/CR input. update_layout rebuilds it on every edition switch (a
+    fresh, empty input); the initial layout holds the 4e version so callbacks
+    listening to it can find it from the first render."""
+    return html.Div(
+        className="field axis-field",
+        children=[
+            html.Label(f"{'Current' if which == 'current' else 'New'} {axis_label(edition)}",
+                       className="field-label"),
+            dcc.Input(
+                id=f"axis-{which}",
+                className="field-input axis-input",
+                type="number",
+                value="",
+                placeholder=axis_hint(edition),
+                min=0,
+            ),
+        ],
+    )
+
+
+app.layout = html.Div(
+    className="page",
+    children=[
+        hero(
+            "D&D Monster Difficulty Scaler",
+            "Strengthen or weaken a monster within its edition: "
+            "stats shift along the edition's own scaling curve.",
+            dcc.RadioItems(
+                id="scale-edition",
+                className="direction-toggle",
+                options=[
+                    {"label": label, "value": val}
+                    for val, label in EDITION_LABELS.items()
+                ],
+                value="4e",
+            ),
         ),
         html.Main(
             className="container",
             children=[
                 dcc.Tabs(
                     className="tabs-container",
+                    parent_className="tabs-parent",
+                    mobile_breakpoint=0,
                     value="scale",
                     children=[
-                        dcc.Tab(
-                            label="Scale",
-                            value="scale",
-                            className="custom-tab",
-                            selected_className="custom-tab custom-tab--selected",
-                            children=[
-                                html.Div(
-                                    className="tab-content",
-                                    children=[
-                                        html.Div(
-                                            className="convert-grid",
-                                            children=[
-                                                html.Section(
-                                                    className="card",
-                                                    children=[
-                                                        html.Span("Source", className="card-eyebrow"),
-                                                        html.H3(id="scale-heading-current"),
-                                                        html.Div(
-                                                            id="axis-current-wrap",
-                                                            className="axis-row",
-                                                        ),
-                                                        html.Div(id="scale-input-fields"),
-                                                    ],
-                                                ),
-                                                html.Section(
-                                                    className="card output-card",
-                                                    children=[
-                                                        html.Span("Scaled", className="card-eyebrow"),
-                                                        html.H3(id="scale-heading-target"),
-                                                        html.Div(
-                                                            id="axis-target-wrap",
-                                                            className="axis-row",
-                                                        ),
-                                                        html.Div(id="scale-output-fields"),
-                                                    ],
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                        dcc.Tab(
-                            label="Method",
-                            value="method",
-                            className="custom-tab",
-                            selected_className="custom-tab custom-tab--selected",
-                            children=[
-                                html.Div(
-                                    className="tab-content",
-                                    children=[
-                                        html.Section(
-                                            className="card explain-intro",
-                                            children=[
-                                                html.H3("Scaling curves"),
-                                                html.P(
-                                                    "Per-edition ordinary least-squares fits of each "
-                                                    "stat against level (4e) or CR (5e), from the parsed "
-                                                    "Monster Manual data. Scaling a monster shifts every "
-                                                    "stat by the curve-implied difference between the old "
-                                                    "and new level/CR, so the monster keeps its own "
-                                                    "above- or below-average character: additive stats "
-                                                    "move by slope × Δ, while HP and damage scale by "
-                                                    "ratio^Δ. R² shows how tightly each stat actually "
-                                                    "tracks level/CR in the data."
-                                                ),
-                                            ],
-                                        ),
-                                        html.Div(id="scale-curves-list"),
-                                    ],
-                                ),
-                            ],
-                        ),
+                        tab("Scale", "scale", [
+                            html.Div(
+                                className="convert-grid",
+                                children=[
+                                    html.Section(
+                                        className="card",
+                                        children=[
+                                            html.Span("Source", className="card-eyebrow"),
+                                            html.H3(id="scale-heading-current"),
+                                            html.P(
+                                                "Enter the current level/CR and any stats "
+                                                "you want scaled.",
+                                                className="card-hint",
+                                            ),
+                                            html.Div(axis_control("current", "4e"), id="axis-current-wrap",
+                                                     className="axis-row"),
+                                            html.Div(id="scale-input-fields"),
+                                        ],
+                                    ),
+                                    html.Section(
+                                        className="card output-card",
+                                        children=[
+                                            html.Span("Scaled", className="card-eyebrow"),
+                                            html.H3(id="scale-heading-target"),
+                                            html.P(
+                                                "Pick a new level/CR; each stat shows its "
+                                                "change from the original.",
+                                                className="card-hint",
+                                            ),
+                                            html.Div(axis_control("target", "4e"), id="axis-target-wrap",
+                                                     className="axis-row"),
+                                            html.Div(id="scale-output-fields"),
+                                        ],
+                                    ),
+                                ],
+                            ),
+                        ]),
+                        tab("Method", "method", [
+                            html.Section(
+                                className="card explain-intro",
+                                children=[
+                                    html.Span("Method", className="card-eyebrow"),
+                                    html.H3("Scaling curves"),
+                                    html.P(
+                                        "Per-edition ordinary least-squares fits of each "
+                                        "stat against level (4e) or CR (5e), from the parsed "
+                                        "Monster Manual data. Scaling a monster shifts every "
+                                        "stat by the curve-implied difference between the old "
+                                        "and new level/CR, so the monster keeps its own "
+                                        "above- or below-average character: additive stats "
+                                        "move by slope × Δ, while HP and damage scale by "
+                                        "ratio^Δ. R² shows how tightly each stat actually "
+                                        "tracks level/CR in the data."
+                                    ),
+                                ],
+                            ),
+                            html.Div(id="scale-curves-list"),
+                        ]),
                     ],
                 ),
             ],
         ),
+        html.Footer(
+            className="footer",
+            children="Numeric input only — no rule-book text is hosted. "
+                     "Curves: models/scale_models.json.",
+        ),
     ],
 )
-
-
-def axis_control(which, edition):
-    hint = "1 – 40" if edition == "4e" else "0 – 30 (incl. 1/8, 1/4, 1/2)"
-    return html.Div(
-        className="field",
-        children=[
-            html.Label(f"{axis_label(edition)}", className="field-label"),
-            dcc.Input(
-                id=f"axis-{which}",
-                className="field-input axis-input",
-                type="number",
-                value="",
-                placeholder=hint,
-                min=0,
-            ),
-        ],
-    )
 
 
 @app.callback(
@@ -333,9 +356,7 @@ def update_layout(edition):
                         html.Div(
                             id={"type": "scale-output", "field": f},
                             className="stat-value",
-                            children=[
-                                html.Span("—", className="stat-pred stat-empty"),
-                            ],
+                            children=EMPTY_OUTPUT,
                         ),
                     ],
                 )
@@ -345,7 +366,7 @@ def update_layout(edition):
                 className="field-group",
                 children=[
                     html.H4(title, className="field-group-title"),
-                    html.Div(rows),
+                    html.Div(rows, className="stat-list"),
                 ],
             )
         )
@@ -370,6 +391,9 @@ def scale_stat(edition, stat, value, delta_axis):
     return value + model["slope"] * delta_axis
 
 
+EMPTY_OUTPUT = [html.Span("—", className="stat-pred stat-empty")]
+
+
 def format_scaled(stat, old, new):
     """Render a scaled stat with its delta as stat-value children."""
     new_r = round_stat(stat, max(new, 1.0 if stat != "ac" else 0.0))
@@ -383,8 +407,8 @@ def format_scaled(stat, old, new):
         delta_class = "stat-delta delta-down"
         delta_text = f"−{format_number(stat, abs(delta))}"
     return [
-        html.Span(format_number(stat, new_r), className="stat-pred"),
         html.Span(delta_text, className=delta_class, title="change from original"),
+        html.Span(format_number(stat, new_r), className="stat-pred"),
     ]
 
 
@@ -400,10 +424,10 @@ def compute_scaled(edition, axis_current, axis_target, input_values):
     stats = stats_for_edition(edition)
     ctx = dash.callback_context
     # An edition switch rebuilds the field components; this callback can fire
-    # against the stale DOM (old field set, new edition) and would return the
-    # wrong number of outputs. Skip those fires — the callback refires once
-    # the new components are in place.
-    if len(ctx.outputs_list) != len(stats):
+    # against the stale DOM (old field set, new edition). Skip those fires —
+    # the callback refires once the new components are in place.
+    output_ids = [entry["id"]["field"] for entry in ctx.outputs_list]
+    if sorted(output_ids) != sorted(stats):
         raise PreventUpdate
     state = {}
     input_ids = set()
@@ -419,8 +443,7 @@ def compute_scaled(edition, axis_current, axis_target, input_values):
     t1 = snap_axis(edition, axis_target)
     delta_axis = (t1 - t0) if (t0 is not None and t1 is not None) else None
 
-    empty = [html.Span("—", className="stat-pred stat-empty")]
-    results = {f: empty for f in stats}
+    results = {f: EMPTY_OUTPUT for f in stats}
     if delta_axis is not None:
         for stat in stats:
             val = state.get(stat)
@@ -433,7 +456,9 @@ def compute_scaled(edition, axis_current, axis_target, input_values):
             new = scale_stat(edition, stat, old, delta_axis)
             results[stat] = format_scaled(stat, old, new)
 
-    return [results[f] for f in stats]
+    # Dash fills pattern-matched outputs in ctx.outputs_list order, which after
+    # a rebuild need not match the stat order: key every result by its id.
+    return [results[f] for f in output_ids]
 
 
 @app.callback(
@@ -457,11 +482,13 @@ def render_curves(_):
     for edition in ["4e", "5e"]:
         spec = SCALE_MODELS[edition]
         children.append(
-            html.H3(f"{EDITION_LABELS[edition]} — n = {spec['n_monsters']}",
+            html.H3([EDITION_LABELS[edition],
+                     html.Span(f"{spec['n_monsters']} monsters", className="badge")],
                     className="direction-heading")
         )
         header = html.Thead(html.Tr([
-            html.Th("Stat"), html.Th("Kind"), html.Th("Per step"), html.Th("R²"), html.Th("n"),
+            html.Th("Stat"), html.Th("Kind"), html.Th("Per step"), html.Th("R²"),
+            html.Th("n", className="num"),
         ]))
         rows = []
         for stat in stats_for_edition(edition):
@@ -472,15 +499,23 @@ def render_curves(_):
                 per_step = f"+{m['slope']:.3f}"
             rows.append(html.Tr([
                 html.Td(label_for(stat)),
-                html.Td(m["kind"] + (" (pooled)" if m.get("pooled") else "")),
+                html.Td([
+                    html.Span(m["kind"], className=f"tag kind-{m['kind']}"),
+                    html.Span(" pooled", className="muted") if m.get("pooled") else None,
+                ]),
                 html.Td(per_step, className="mono"),
-                html.Td(f"{m['r2']:.3f}", className="mono"),
-                html.Td(m["n"], className="mono"),
+                html.Td(html.Div(className="r2-cell", children=[
+                    html.Div(className="r2-bar", children=html.Div(
+                        style={"width": f"{max(0.0, min(m['r2'], 1.0)) * 100:.0f}%"})),
+                    html.Span(f"{m['r2']:.3f}", className="mono"),
+                ])),
+                html.Td(m["n"], className="mono num"),
             ]))
         children.append(
             html.Div(
                 className="card model-card",
-                children=[html.Table([header, html.Tbody(rows)], className="method-table")],
+                children=html.Div(html.Table([header, html.Tbody(rows)], className="method-table"),
+                                  className="table-scroll"),
             )
         )
     return children
