@@ -27,7 +27,7 @@ With the target CR given:
 | CR | 0.56·level - 1.3  (solo +8.7) | ± 0.35·(result + 5) | 41% | 0.78 |
 | HP | 0.088·HP + 11·CR + 9.4  (solo +20) | ± 0.19·(result + 76) | 34% | 0.86 |
 | AC | 0.34·CR + 12.6  (solo +1.6) | ± 0.08·(result + 15) | 51% | 0.67 |
-| attack | 0.062·attack + 0.41·CR + 3.2  (solo +1.4) | ± 0.12·(result + 6) | 33% | 0.88 |
+| attack | 0.12·max(STR, DEX) + 0.43·CR + 1.6  (solo +0.81) | ± 0.11·(result + 6) | 31% | 0.89 |
 | damage | CR + 8 | ± 0.23·(result + 13) | 58% | 0.51 |
 | damage/round | 5.9·attacks/round + 2.5·CR + 2.1 | ± 0.3·(result + 20) | 57% | 0.45 |
 | STR | 0.71·STR + 2.2  (elite +1.9, solo +6.3) | ± 0.14·(result + 17) | 49% | 0.74 |
@@ -37,7 +37,7 @@ With the target CR given:
 | WIS | 0.21·WIS + 0.2·CR + 8 | ± 0.14·(result + 12) | 81% | 0.27 |
 | CHA | 0.48·CHA + 0.35·CR + 2.6 | ± 0.17·(result + 11) | 58% | 0.61 |
 | DEX save | 0.17·DEX + 0.15·CR + 1.4  (solo -1.1) | ± 0.19·(result + 6) | 72% | 0.21 |
-| CON save | 0.16·CON + 0.35·CR + 0.7  (solo +1.7) | ± 0.13·(result + 8) | 54% | 0.41 |
+| CON save | 0.17·max(STR, CON) + 0.36·CR - 0.1  (solo +1.8) | ± 0.12·(result + 8) | 47% | 0.46 |
 | WIS save | 0.38·CR + 2.1  (solo -1.1) | ± 0.14·(result + 6) | 51% | 0.47 |
 | CHA save | 0.43·CR + 2.3  (solo -0.71) | ± 0.12·(result + 7.5) | 53% | 0.53 |
 

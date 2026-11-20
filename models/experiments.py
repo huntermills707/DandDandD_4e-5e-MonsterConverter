@@ -13,17 +13,25 @@ Usage:
     .venv/bin/python -m models.experiments --loss
     .venv/bin/python -m models.experiments --two-stage
     .venv/bin/python -m models.experiments --combat
+    .venv/bin/python -m models.experiments --max-features [--seed N --repeats N]
 """
 
-import argparse
+import os
+
+# One BLAS/OpenMP thread per process: the experiments run one process per
+# core, and threaded BLAS in each made Huber fits ~200x slower (3 ms -> 0.6 s)
+for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_v, "1")
+
+import argparse  # noqa: E402
 from collections import Counter
-from concurrent.futures import ProcessPoolExecutor
-from functools import partial
+from concurrent.futures import ProcessPoolExecutor, as_completed  # noqa: E402
+from functools import partial  # noqa: E402
 
-import numpy as np
+import numpy as np  # noqa: E402
 
-from models.fit_models import MODEL_SPECS, LinearDesign, fit_spec
-from pipeline.datasets import SOURCES, load_pairs, resolve_source
+from models.fit_models import MODEL_SPECS, LinearDesign, fit_spec  # noqa: E402
+from pipeline.datasets import SOURCES, load_pairs, resolve_source  # noqa: E402
 
 # Feature lists of the original specs (designs D0-D7), kept for comparison.
 FULL_SPECS = [
@@ -145,12 +153,15 @@ def d10(spec):
 DESIGNS = [d0, d2, d7, d8, d9, d10]
 
 
-def nested_ratios(pairs, spec, variants, n_repeats=3, seed=2000, design=None):
+def nested_ratios(pairs, spec, variants, n_repeats=3, seed=2000, design=None,
+                  counterparts=None):
     """Honest held-out error of feature-selection procedures: selection is
     re-run inside each outer training fold. variants: {name: (backward
-    pool, forward extras, forward threshold)}. Returns {name: mean MAE /
-    baseline over repeats} and {name: Counter of kept features}."""
-    from models.fit_models import (COUNTERPART, DEFAULT_DESIGN, extract, feature_value,
+    pool, forward extras, forward threshold)}. counterparts: stats dropped
+    when their coefficient is negative (default: the spec's COUNTERPART).
+    Returns {name: mean MAE / baseline over repeats} and {name: Counter of
+    kept features}."""
+    from models.fit_models import (DEFAULT_DESIGN, counterparts_of, extract, feature_value,
                                    grouped_folds, rule_pairs, select_features, source_target)
 
     design = design or DEFAULT_DESIGN
@@ -170,7 +181,7 @@ def nested_ratios(pairs, spec, variants, n_repeats=3, seed=2000, design=None):
             for n, (pool, extras, tol_add) in variants.items():
                 kept, _ = select_features([usable[k] for k in tr], dict(spec, features=pool),
                                           design,
-                                          COUNTERPART[spec["direction"]][spec["target"]],
+                                          counterparts or counterparts_of(spec),
                                           extras=extras, tol_add=tol_add)
                 kept_count[n].update(kept)
                 idx = [full.index(f) for f in kept]
@@ -375,6 +386,103 @@ def combat_roles(pairs, n_repeats=5):
                   f"({(y - x) / x:+5.1%})  entered: {roles}")
 
 
+# "The better of two abilities", where an edition's own math uses it: 4e
+# defenses take the higher of two abilities (Fort STR/CON, Ref DEX/INT, Will
+# WIS/CHA; light-armor AC adds DEX or INT), and 5e weapon attacks and their
+# damage add STR or DEX. 4e -> 5e saves split each 4e defense into abilities,
+# so the 4e defense pair (and the defense itself) are offered to them.
+MAX_PAIRS = {
+    ("4e_to_5e", "attack_bonus"): ("ability_str", "ability_dex"),
+    ("4e_to_5e", "damage_avg"): ("ability_str", "ability_dex"),
+    ("4e_to_5e", "damage_per_round"): ("ability_str", "ability_dex"),
+    ("4e_to_5e", "save_dex"): ("ability_dex", "ability_int"),
+    ("4e_to_5e", "save_con"): ("ability_str", "ability_con"),
+    ("4e_to_5e", "save_wis"): ("ability_wis", "ability_cha"),
+    ("4e_to_5e", "save_cha"): ("ability_wis", "ability_cha"),
+    ("5e_to_4e", "ac"): ("ability_dex", "ability_int"),
+    ("5e_to_4e", "fort"): ("ability_str", "ability_con"),
+    ("5e_to_4e", "ref"): ("ability_dex", "ability_int"),
+    ("5e_to_4e", "will"): ("ability_wis", "ability_cha"),
+    ("5e_to_4e", "attack_bonus"): ("ability_str", "ability_dex"),
+    ("5e_to_4e", "damage_avg"): ("ability_str", "ability_dex"),
+}
+SAVE_DEFENSE = {"save_dex": "ref", "save_con": "fort", "save_wis": "will", "save_cha": "will"}
+
+
+def max_variants(spec, direct):
+    """Candidate pools for one rule (see --max-features), each with the
+    shipped forward step (combat roles on the 5e -> 4e target-level rules)."""
+    from models.fit_models import COMBAT_FORWARD, COMBAT_ROLES, COUNTERPART, candidate_features
+
+    key = (spec["direction"], spec["target"])
+    a, b = MAX_PAIRS[key]
+    mx = f"max({a},{b})"
+    pool = candidate_features(spec)
+    combat = [f"role_{r}" for r in COMBAT_ROLES] if key in COMBAT_FORWARD and not direct else []
+    tol = 0.03 if combat else 0.0
+    cps = COUNTERPART[spec["direction"]][spec["target"]]
+    without = [f for f in pool if f != mx]  # the pool before MAX_TERMS shipped
+    variants = {
+        "no max": (without, combat, tol),
+        "+ max": (without + [mx], combat, tol),
+        "+ both abilities": (without + [f for f in (a, b) if f not in without], combat, tol),
+    }
+    if a in cps or b in cps:
+        variants["max replaces abilities"] = ([mx] + [f for f in without if f not in (a, b)],
+                                              combat, tol)
+    if spec["target"] in SAVE_DEFENSE:
+        variants["+ 4e defense"] = (without + [SAVE_DEFENSE[spec["target"]]], combat, tol)
+    return variants, cps + [mx, a, b] + [SAVE_DEFENSE.get(spec["target"], mx)]
+
+
+def _max_job(pairs, n_repeats, seed, job):
+    """One (rule, mode, candidate pool): same outer folds for every pool."""
+    from models.fit_models import direct_spec
+
+    spec, mode, name = job
+    if mode == "direct":
+        spec = direct_spec(spec)
+    variants, cps = max_variants(spec, mode == "direct")
+    r, kept = nested_ratios(pairs, spec, {name: variants[name]}, n_repeats, seed=seed,
+                            counterparts=cps)
+    return r[name], kept[name]
+
+
+def max_features(pairs, n_repeats=5, seed=2000):
+    """Nested CV: max(a, b) of two abilities offered to the rules whose
+    edition math uses the better of two (MAX_PAIRS), vs. offering both
+    abilities separately, max replacing the abilities, and (4e -> 5e saves)
+    the 4e defense. Rules on the target level/CR and direct rules. Each
+    rule's line prints as soon as all its pools are scored."""
+    from models.fit_models import TARGET_SCALE, direct_spec
+
+    rules = [(s, mode) for s in MODEL_SPECS for mode in ("target", "direct")
+             if (s["direction"], s["target"]) in MAX_PAIRS
+             and (mode == "target" or s["target"] != TARGET_SCALE[s["direction"]])]
+    names = {k: list(max_variants(direct_spec(s) if m == "direct" else s, m == "direct")[0])
+             for k, (s, m) in enumerate(rules)}
+    print(f"MAE / baseline (change vs. no max); [max: folds keeping the max term, "
+          f"of {5 * n_repeats}]", flush=True)
+    done = {k: {} for k in names}
+    with ProcessPoolExecutor() as ex:
+        futs = {ex.submit(_max_job, pairs, n_repeats, seed, (*rules[k], n)): (k, n)
+                for k in names for n in names[k]}
+        for fut in as_completed(futs):
+            k, n = futs[fut]
+            done[k][n] = fut.result()
+            if len(done[k]) < len(names[k]):
+                continue
+            s, mode = rules[k]
+            base = done[k]["no max"][0]
+            cells = [f"no max {base:.3f}"] + [
+                f"{n}: {v:.3f} ({(v - base) / base:+.1%})"
+                for n, (v, _) in ((n, done[k][n]) for n in names[k][1:])]
+            kept = done[k]["+ max"][1]
+            n_max = sum(c for f, c in kept.items() if f.startswith("max("))
+            print(f"{mode:6s} {s['direction'] + '/' + s['target']:24s} " + " | ".join(cells)
+                  + f"  [max: {n_max}]", flush=True)
+
+
 def _interaction_job(pairs, n_repeats, spec):
     return nested_ratios(pairs, spec, interaction_variants(spec), n_repeats)
 
@@ -425,6 +533,10 @@ def main(argv=None):
                     help="fitting loss and related-pair weight under nested CV")
     ap.add_argument("--combat", action="store_true",
                     help="4e combat roles offered to each rule's forward step, nested CV")
+    ap.add_argument("--max-features", action="store_true",
+                    help="max(a, b) of two abilities offered to the rules that use one, nested CV")
+    ap.add_argument("--seed", type=int, default=2000, help="outer-fold seed (--max-features)")
+    ap.add_argument("--repeats", type=int, default=5, help="outer repeats (--max-features)")
     ap.add_argument("--two-stage", action="store_true",
                     help="rules on the target edition's level/CR, given or converted")
     args = ap.parse_args(argv)
@@ -441,6 +553,9 @@ def main(argv=None):
         return
     if args.combat:
         combat_roles(pairs)
+        return
+    if args.max_features:
+        max_features(pairs, args.repeats, args.seed)
         return
 
     if args.nested_selection:

@@ -242,6 +242,24 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
      monster should play. Offered to 4e→5e rules or the direct rules, combat
      roles mostly chased noise (4e→5e saves 2–8% worse), so they aren't, and
      the selector is hidden for 4e → 5e.
+   - **The better of two abilities** (`models/experiments.py
+     --max-features`, nested CV, two seeds). Both editions sometimes use
+     whichever of two abilities is higher: 4e defenses (Fort STR/CON, Ref
+     DEX/INT, Will WIS/CHA) and 5e weapon attacks (proficiency + the higher
+     of the STR and DEX modifiers, exactly so for 81% of 5e MM attacks). A
+     `max(a, b)` term was offered to each rule where one of these applies and
+     compared with offering both abilities separately. Two rules on the
+     target CR improved and now use it: **4e→5e attack**
+     (*0.12·max(STR, DEX) + 0.43·CR + 1.6*; error −10%, and the 4e attack
+     bonus, set by level in 4e, drops out) and the **5e CON save**
+     (*0.17·max(STR, CON) + 0.36·CR*, the 4e Fort pair; −13 to −17%, but on
+     only 27 scored pairs). Elsewhere it did nothing (5e→4e Fort, Will, AC,
+     attack, damage) or hurt: 4e→5e damage and damage/round (+5 to +10%),
+     and 5e→4e Ref on the target level (+5%). Adding INT separately
+     helped 5e→4e Ref (direct rule −8%) and the 4e→5e direct DEX save
+     (−17%, 27 pairs, INT outweighing DEX); neither is adopted yet.
+     The experiment runs each process with one BLAS thread, since threaded BLAS in
+     every process made the fits ~200× slower.
    - **Not adopted: elite/solo slopes for 4e→5e saves.** They looked
      promising in that comparison, so they were rechecked on fresh folds
      (nested CV, ×10, two seeds). CON save error fell from 84% to 66% of

@@ -15,14 +15,21 @@ The shipped equation and q are fit on all pairs.
 Results go to models/models.json (for the app) and models/eval_report.json.
 """
 
-import argparse
-import json
-import math
-import sys
-from pathlib import Path
+import os
 
-import numpy as np
-from sklearn.linear_model import HuberRegressor, LinearRegression, RidgeCV
+# One BLAS/OpenMP thread: the fits are tiny, and threaded BLAS spent ~12x the
+# CPU for a slower fit (and ~200x slower fits in one-process-per-core runs)
+for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_v, "1")
+
+import argparse  # noqa: E402
+import json  # noqa: E402
+import math  # noqa: E402
+import sys  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+import numpy as np  # noqa: E402
+from sklearn.linear_model import HuberRegressor, LinearRegression, RidgeCV  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -273,6 +280,19 @@ INTERACTIONS = {("5e_to_4e", "hp"): ["role_solo*{scale}"]}  # the rule's level/C
 COMBAT_FORWARD = {("5e_to_4e", t) for t in
                   ("hp", "ac", "fort", "ref", "will", "attack_bonus", "damage_avg")}
 
+# "The better of two abilities", offered to a rule's backward selection on
+# the target CR (models/experiments.py --max-features, nested CV, two seeds).
+# 5e attack is proficiency + the higher of the STR and DEX modifiers (81% of
+# the 5e MM), and 4e attack is level-set, so the 4e STR/DEX carry what the
+# 4e attack can't: error -10%, and the 4e attack drops out. The 5e CON save
+# follows the 4e Fort pair (STR or CON): -13 to -17%, on 27 scored pairs.
+# Elsewhere max did nothing (5e -> 4e defenses, AC, attack) or hurt (4e -> 5e
+# damage +5-10%; the direct rules), so it is not offered there.
+MAX_TERMS = {
+    ("4e_to_5e", "attack_bonus"): ["max(ability_str,ability_dex)"],
+    ("4e_to_5e", "save_con"): ["max(ability_str,ability_con)"],
+}
+
 # Stats 4e fixes by role tier rather than scale: every minion has 1 HP. Those
 # pairs are left out of the rule's fit, and the rule returns the fixed value.
 FIXED_BY_ROLE = {("5e_to_4e", "hp"): {"minion": 1.0}}
@@ -290,15 +310,24 @@ def rule_pairs(pairs, spec):
     return [p for p in pairs if role_tier(p["4e"].get("role")) not in fixed]
 
 
+def counterparts_of(spec):
+    """Stats dropped from a rule when their coefficient is negative."""
+    key = (spec["direction"], spec["target"])
+    return COUNTERPART[spec["direction"]][spec["target"]] + MAX_TERMS.get(key, [])
+
+
 def candidate_features(spec, role_features=ROLE_FEATURES):
-    """Counterpart + scale, role tiers (minus fixed ones and those replaced
-    by a slope), and interactions."""
+    """Counterpart + scale, max terms (rules on the target scale), role
+    tiers (minus fixed ones and those replaced by a slope), and
+    interactions."""
     key = (spec["direction"], spec["target"])
     fixed = FIXED_BY_ROLE.get(key, {})
     scale = next(f for f in spec["features"] if f in ("level", "cr_num"))
+    maxes = MAX_TERMS.get(key, []) if scale == TARGET_SCALE[spec["direction"]] else []
     slopes = [f.format(scale=scale) for f in INTERACTIONS.get(key, [])]
     sloped = {f.split("*")[0] for f in slopes}
-    return (spec["features"]
+    stats = [f for f in spec["features"] if f != scale]  # stats first, as rules read
+    return (stats + [f for f in maxes if f not in stats] + [scale]
             + [f for f in role_features if f[5:] not in fixed and f not in sloped] + slopes)
 
 
@@ -311,6 +340,11 @@ def feature_value(pair, source_prefix, feature):
     if "*" in feature:
         a, b = (feature_value(pair, source_prefix, f) for f in feature.split("*"))
         return None if a is None or b is None else a * b
+    if feature.startswith("max("):
+        # the better of two stats: 4e defenses (Ref from DEX or INT) and 5e
+        # weapon attacks (STR or DEX) use whichever ability is higher
+        vals = [feature_value(pair, source_prefix, f) for f in feature[4:-1].split(",")]
+        return None if any(v is None for v in vals) else max(vals)
     if feature.startswith("role_"):
         return float(feature[5:] in role_flags(pair["4e"].get("role")))
     if feature == TARGET_SCALE_OF[source_prefix]:
@@ -531,6 +565,8 @@ LABELS = {
 def short_label(field):
     if field.startswith("role_"):
         return f"[{field[5:]}]"
+    if field.startswith("max("):
+        return f"max({', '.join(short_label(f) for f in field[4:-1].split(','))})"
     return LABELS.get(field, field)
 
 
@@ -630,7 +666,7 @@ def write_rules(models, path):
 def fit_rule(pairs, spec, make_model, extra_features, select, direct=False):
     """Candidate terms -> selection -> fit. Returns the result or None."""
     key = (spec["direction"], spec["target"])
-    counterparts = COUNTERPART[spec["direction"]][spec["target"]]
+    counterparts = counterparts_of(spec)
     spec = dict(spec, features=candidate_features(spec, list(extra_features)))
     fit_pairs = rule_pairs(pairs, spec)
     dropped = []

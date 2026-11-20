@@ -74,6 +74,20 @@ def test_role_flags_and_interactions():
     assert app.feature_values(["role_solo*cr_num"], {"role_solo": 1.0, "cr_num": None}) is None
 
 
+def test_max_feature():
+    """max(a,b): the better of two abilities, in the fit and in the app."""
+    pair = {"4e": {"ability_str": 18, "ability_dex": 21, "ability_con": None}, "5e": {}}
+    assert feature_value(pair, "4e", "max(ability_str,ability_dex)") == 21
+    assert feature_value(pair, "4e", "max(ability_str,ability_con)") is None  # missing stat
+    assert app.input_stats("max(ability_str,ability_dex)") == ["ability_str", "ability_dex"]
+    assert app.feature_values(["max(ability_str,ability_dex)"],
+                              {"ability_str": "18", "ability_dex": "21"}) == {
+        "max(ability_str,ability_dex)": 21.0}
+    assert app.feature_values(["max(ability_str,ability_dex)"],
+                              {"ability_str": "18", "ability_dex": None}) is None
+    assert app.feature_label("max(ability_str,ability_dex)") == "max(STR, DEX)"
+
+
 def test_related_weight_and_weighted_median():
     assert weighted_median([1, 2, 3, 100], [1, 1, 1, 1]) == 2
     assert weighted_median([1, 2, 3, 100], [1, 1, 1, 10]) == 100

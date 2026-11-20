@@ -101,20 +101,31 @@ def is_role_feature(field):
     return field.startswith("role_")
 
 
+def max_parts(part):
+    """Stats inside "max(ability_str,ability_dex)", or None for a plain stat."""
+    return part[4:-1].split(",") if part.startswith("max(") else None
+
+
 def input_stats(feature):
-    """Typed-in stats a feature needs: "role_solo*cr_num" -> ["cr_num"]."""
-    return [f for f in feature.split("*") if not is_role_feature(f)]
+    """Typed-in stats a feature needs: "role_solo*cr_num" -> ["cr_num"],
+    "max(ability_str,ability_dex)" -> ["ability_str", "ability_dex"]."""
+    out = []
+    for f in feature.split("*"):
+        if not is_role_feature(f):
+            out += max_parts(f) or [f]
+    return out
 
 
 def feature_values(features, state):
     """{feature: float} from typed stats and role indicators in `state`;
-    products for interaction terms. None if any input is missing."""
+    products for interaction terms, the larger stat for max(a,b). None if
+    any input is missing."""
     values = {}
     for feature in features:
         x = 1.0
         for part in feature.split("*"):
             try:
-                x *= float(state.get(part))
+                x *= max(float(state.get(f)) for f in max_parts(part) or [part])
             except (TypeError, ValueError):
                 return None
         values[feature] = x
@@ -225,7 +236,12 @@ def feature_label(feature):
     """Readable feature name: "role_solo*cr_num" -> "solo × CR"."""
     parts = []
     for part in feature.split("*"):
-        parts.append(part[len("role_"):] if is_role_feature(part) else label_for(part))
+        if is_role_feature(part):
+            parts.append(part[len("role_"):])
+        elif max_parts(part):
+            parts.append(f"max({', '.join(label_for(f) for f in max_parts(part))})")
+        else:
+            parts.append(label_for(part))
     return " × ".join(parts)
 
 

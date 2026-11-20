@@ -255,7 +255,7 @@
     "target_edition": "5e",
     "target": "attack_bonus",
     "features": [
-      "attack_bonus",
+      "max(ability_str,ability_dex)",
       "cr_num",
       "role_solo"
     ],
@@ -268,38 +268,39 @@
     "log_features": [],
     "clip_min": 0.0,
     "interval_offset": 6.0,
-    "n": 139,
-    "n_eval": 78,
-    "n_groups": 93,
+    "n": 144,
+    "n_eval": 80,
+    "n_groups": 96,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 3.2,
+    "intercept": 1.6,
     "coef": [
-      0.062,
-      0.41,
-      1.4
+      0.12,
+      0.43,
+      0.81
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.12,
-    "r2": 0.883,
-    "r2_sd": 0.006,
-    "mae": 1.002,
-    "mae_sd": 0.029,
-    "baseline_mae": 3.024,
-    "baseline_mae_sd": 0.034,
-    "test_coverage": 0.808,
-    "test_coverage_sd": 0.011,
+    "conformal_quantile": 0.11,
+    "r2": 0.894,
+    "r2_sd": 0.002,
+    "mae": 0.918,
+    "mae_sd": 0.016,
+    "baseline_mae": 2.988,
+    "baseline_mae_sd": 0.029,
+    "test_coverage": 0.809,
+    "test_coverage_sd": 0.014,
     "coverage_by_third": [
-      0.72,
-      0.85,
+      0.71,
+      0.87,
       0.85
     ],
-    "interval_rel_width": 0.494,
+    "interval_rel_width": 0.445,
     "dropped_features": [
+      "attack_bonus",
       "role_elite",
       "role_minion"
     ],
-    "equation": "attack = 0.062\u00b7attack + 0.41\u00b7CR + 3.2  (solo +1.4)",
-    "interval_rule": "\u00b1 0.12\u00b7(result + 6)",
+    "equation": "attack = 0.12\u00b7max(STR, DEX) + 0.43\u00b7CR + 1.6  (solo +0.81)",
+    "interval_rule": "\u00b1 0.11\u00b7(result + 6)",
     "target_scale": "cr_num",
     "direct": {
       "features": [
@@ -1255,7 +1256,7 @@
     "target_edition": "5e",
     "target": "save_con",
     "features": [
-      "ability_con",
+      "max(ability_str,ability_con)",
       "cr_num",
       "role_solo"
     ],
@@ -1272,34 +1273,35 @@
     "n_eval": 27,
     "n_groups": 25,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 0.7,
+    "intercept": -0.1,
     "coef": [
-      0.16,
-      0.35,
-      1.7
+      0.17,
+      0.36,
+      1.8
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.13,
-    "r2": 0.409,
-    "r2_sd": 0.052,
-    "mae": 1.678,
-    "mae_sd": 0.188,
+    "conformal_quantile": 0.12,
+    "r2": 0.46,
+    "r2_sd": 0.028,
+    "mae": 1.468,
+    "mae_sd": 0.125,
     "baseline_mae": 3.124,
     "baseline_mae_sd": 0.126,
-    "test_coverage": 0.867,
-    "test_coverage_sd": 0.03,
+    "test_coverage": 0.881,
+    "test_coverage_sd": 0.015,
     "coverage_by_third": [
-      0.67,
+      0.71,
       0.93,
       1.0
     ],
-    "interval_rel_width": 1.308,
+    "interval_rel_width": 1.279,
     "dropped_features": [
+      "ability_con",
       "role_elite",
       "role_minion"
     ],
-    "equation": "CON save = 0.16\u00b7CON + 0.35\u00b7CR + 0.7  (solo +1.7)",
-    "interval_rule": "\u00b1 0.13\u00b7(result + 8)",
+    "equation": "CON save = 0.17\u00b7max(STR, CON) + 0.36\u00b7CR - 0.1  (solo +1.8)",
+    "interval_rule": "\u00b1 0.12\u00b7(result + 8)",
     "target_scale": "cr_num",
     "direct": {
       "features": [
