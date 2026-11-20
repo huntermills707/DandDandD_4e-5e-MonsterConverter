@@ -21,19 +21,19 @@
       },
       "attack_bonus": {
         "kind": "additive",
-        "slope": 0.9688,
-        "intercept": 4.5405,
+        "slope": 0.988754,
+        "intercept": 4.4894,
         "per_step_ratio": null,
-        "r2": 0.961,
-        "n": 479
+        "r2": 0.966,
+        "n": 455
       },
       "damage_avg": {
         "kind": "multiplicative",
-        "slope": 0.047027,
-        "intercept": 1.9402,
-        "per_step_ratio": 1.048151,
-        "r2": 0.608,
-        "n": 438
+        "slope": 0.043002,
+        "intercept": 1.7922,
+        "per_step_ratio": 1.04394,
+        "r2": 0.474,
+        "n": 455
       },
       "ability_str": {
         "kind": "additive",
@@ -131,19 +131,27 @@
       },
       "attack_bonus": {
         "kind": "additive",
-        "slope": 0.532387,
-        "intercept": 3.7114,
+        "slope": 0.528882,
+        "intercept": 3.6322,
         "per_step_ratio": null,
-        "r2": 0.834,
-        "n": 275
+        "r2": 0.827,
+        "n": 305
       },
       "damage_avg": {
         "kind": "multiplicative",
-        "slope": 0.065784,
-        "intercept": 1.9228,
-        "per_step_ratio": 1.067996,
-        "r2": 0.391,
-        "n": 275
+        "slope": 0.080227,
+        "intercept": 1.9276,
+        "per_step_ratio": 1.083533,
+        "r2": 0.43,
+        "n": 305
+      },
+      "damage_per_round": {
+        "kind": "multiplicative",
+        "slope": 0.113557,
+        "intercept": 2.1173,
+        "per_step_ratio": 1.120256,
+        "r2": 0.504,
+        "n": 298
       },
       "ability_str": {
         "kind": "additive",

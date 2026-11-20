@@ -6,7 +6,7 @@ level/CR, and every stat is shifted along the edition's own fitted scaling
 curve (models/scale_models.json, built by models/fit_scale_models.py):
 
     additive stats       new = old + slope * Δaxis
-    hp / damage_avg      new = old * ratio ** Δaxis
+    hp / damage          new = old * ratio ** Δaxis
 
 Tabs:
     Scale   — input form and scaled stat sheet with per-stat deltas.
@@ -47,11 +47,11 @@ VALID_CRS = [0, 0.125, 0.25, 0.5] + list(range(1, 31))
 CR_LABELS = {0.125: "1/8", 0.25: "1/4", 0.5: "1/2"}
 
 # Stats that scale multiplicatively and how to round each stat for display.
-MULTIPLICATIVE = {"hp", "damage_avg"}
-HALF_STEP = {"damage_avg"}  # dice averages land on .5 steps
+MULTIPLICATIVE = {"hp", "damage_avg", "damage_per_round"}
+HALF_STEP = {"damage_avg", "damage_per_round"}  # dice averages land on .5 steps
 
 FIELD_GROUPS = [
-    ("Core stats", ["hp", "ac", "attack_bonus", "damage_avg"]),
+    ("Core stats", ["hp", "ac", "attack_bonus", "damage_avg", "damage_per_round"]),
     (
         "Ability scores",
         ["ability_str", "ability_dex", "ability_con",
@@ -72,7 +72,8 @@ def label_for(field):
         "hp": "HP",
         "ac": "AC",
         "attack_bonus": "Attack Bonus",
-        "damage_avg": "Damage Average",
+        "damage_avg": "Damage per Attack",
+        "damage_per_round": "Damage per Round",
         "ability_str": "STR",
         "ability_dex": "DEX",
         "ability_con": "CON",

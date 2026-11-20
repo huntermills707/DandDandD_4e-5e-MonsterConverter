@@ -56,7 +56,7 @@
     "target": "hp",
     "features": [
       "hp",
-      "level",
+      "cr_num",
       "role_solo"
     ],
     "estimator": "explainable",
@@ -72,34 +72,83 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": -7.1,
+    "intercept": 9.4,
     "coef": [
-      0.16,
-      5.6,
-      84.0
+      0.088,
+      11.0,
+      20.0
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.27,
-    "r2": 0.856,
-    "r2_sd": 0.008,
-    "mae": 29.403,
-    "mae_sd": 0.503,
+    "conformal_quantile": 0.19,
+    "r2": 0.857,
+    "r2_sd": 0.014,
+    "mae": 27.073,
+    "mae_sd": 1.047,
     "baseline_mae": 79.543,
     "baseline_mae_sd": 0.473,
-    "test_coverage": 0.883,
-    "test_coverage_sd": 0.007,
+    "test_coverage": 0.799,
+    "test_coverage_sd": 0.024,
     "coverage_by_third": [
-      0.88,
-      0.9,
-      0.87
+      0.87,
+      0.86,
+      0.68
     ],
-    "interval_rel_width": 1.468,
+    "interval_rel_width": 1.161,
     "dropped_features": [
       "role_elite",
       "role_minion"
     ],
-    "equation": "HP = 0.16\u00b7HP + 5.6\u00b7level - 7.1  (solo +84)",
-    "interval_rule": "\u00b1 0.27\u00b7(result + 76)"
+    "equation": "HP = 0.088\u00b7HP + 11\u00b7CR + 9.4  (solo +20)",
+    "interval_rule": "\u00b1 0.19\u00b7(result + 76)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "hp",
+        "level",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 76.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": -7.1,
+      "coef": [
+        0.16,
+        5.6,
+        84.0
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.27,
+      "r2": 0.856,
+      "r2_sd": 0.008,
+      "mae": 29.403,
+      "mae_sd": 0.503,
+      "baseline_mae": 79.543,
+      "baseline_mae_sd": 0.473,
+      "test_coverage": 0.883,
+      "test_coverage_sd": 0.007,
+      "coverage_by_third": [
+        0.88,
+        0.9,
+        0.87
+      ],
+      "interval_rel_width": 1.468,
+      "dropped_features": [
+        "role_elite",
+        "role_minion"
+      ],
+      "equation": "HP = 0.16\u00b7HP + 5.6\u00b7level - 7.1  (solo +84)",
+      "interval_rule": "\u00b1 0.27\u00b7(result + 76)"
+    }
   },
   "4e_to_5e/ac": {
     "direction": "4e_to_5e",
@@ -107,7 +156,7 @@
     "target_edition": "5e",
     "target": "ac",
     "features": [
-      "ac",
+      "cr_num",
       "role_solo"
     ],
     "estimator": "explainable",
@@ -123,34 +172,82 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 9.1,
+    "intercept": 12.6,
     "coef": [
-      0.21,
-      4.1
+      0.34,
+      1.6
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.1,
-    "r2": 0.643,
+    "conformal_quantile": 0.08,
+    "r2": 0.673,
     "r2_sd": 0.01,
-    "mae": 1.511,
-    "mae_sd": 0.03,
+    "mae": 1.428,
+    "mae_sd": 0.033,
     "baseline_mae": 2.815,
     "baseline_mae_sd": 0.024,
-    "test_coverage": 0.86,
-    "test_coverage_sd": 0.01,
+    "test_coverage": 0.823,
+    "test_coverage_sd": 0.016,
     "coverage_by_third": [
-      0.88,
-      0.8,
-      0.9
+      0.83,
+      0.71,
+      0.93
     ],
-    "interval_rel_width": 0.396,
+    "interval_rel_width": 0.313,
     "dropped_features": [
-      "level",
       "role_elite",
+      "ac",
       "role_minion"
     ],
-    "equation": "AC = 0.21\u00b7AC + 9.1  (solo +4.1)",
-    "interval_rule": "\u00b1 0.1\u00b7(result + 15)"
+    "equation": "AC = 0.34\u00b7CR + 12.6  (solo +1.6)",
+    "interval_rule": "\u00b1 0.08\u00b7(result + 15)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "ac",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 15.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 9.1,
+      "coef": [
+        0.21,
+        4.1
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.1,
+      "r2": 0.643,
+      "r2_sd": 0.01,
+      "mae": 1.511,
+      "mae_sd": 0.03,
+      "baseline_mae": 2.815,
+      "baseline_mae_sd": 0.024,
+      "test_coverage": 0.86,
+      "test_coverage_sd": 0.01,
+      "coverage_by_third": [
+        0.88,
+        0.8,
+        0.9
+      ],
+      "interval_rel_width": 0.396,
+      "dropped_features": [
+        "level",
+        "role_elite",
+        "role_minion"
+      ],
+      "equation": "AC = 0.21\u00b7AC + 9.1  (solo +4.1)",
+      "interval_rule": "\u00b1 0.1\u00b7(result + 15)"
+    }
   },
   "4e_to_5e/attack_bonus": {
     "direction": "4e_to_5e",
@@ -158,7 +255,8 @@
     "target_edition": "5e",
     "target": "attack_bonus",
     "features": [
-      "level",
+      "attack_bonus",
+      "cr_num",
       "role_solo"
     ],
     "estimator": "explainable",
@@ -170,38 +268,87 @@
     "log_features": [],
     "clip_min": 0.0,
     "interval_offset": 6.0,
-    "n": 134,
-    "n_eval": 73,
-    "n_groups": 88,
+    "n": 139,
+    "n_eval": 78,
+    "n_groups": 93,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
     "intercept": 3.2,
     "coef": [
-      0.25,
-      5.8
+      0.062,
+      0.41,
+      1.4
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.2,
-    "r2": 0.758,
+    "conformal_quantile": 0.12,
+    "r2": 0.883,
     "r2_sd": 0.006,
-    "mae": 1.492,
-    "mae_sd": 0.02,
-    "baseline_mae": 3.088,
-    "baseline_mae_sd": 0.032,
-    "test_coverage": 0.844,
-    "test_coverage_sd": 0.019,
+    "mae": 1.002,
+    "mae_sd": 0.029,
+    "baseline_mae": 3.024,
+    "baseline_mae_sd": 0.034,
+    "test_coverage": 0.808,
+    "test_coverage_sd": 0.011,
     "coverage_by_third": [
-      0.94,
-      0.79,
-      0.8
+      0.72,
+      0.85,
+      0.85
     ],
-    "interval_rel_width": 0.798,
+    "interval_rel_width": 0.494,
     "dropped_features": [
-      "attack_bonus",
-      "role_minion",
-      "role_elite"
+      "role_elite",
+      "role_minion"
     ],
-    "equation": "attack = 0.25\u00b7level + 3.2  (solo +5.8)",
-    "interval_rule": "\u00b1 0.2\u00b7(result + 6)"
+    "equation": "attack = 0.062\u00b7attack + 0.41\u00b7CR + 3.2  (solo +1.4)",
+    "interval_rule": "\u00b1 0.12\u00b7(result + 6)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "level",
+        "role_elite",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 6.0,
+      "n": 144,
+      "n_eval": 80,
+      "n_groups": 96,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 2.8,
+      "coef": [
+        0.29,
+        1.0,
+        5.3
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.18,
+      "r2": 0.782,
+      "r2_sd": 0.01,
+      "mae": 1.419,
+      "mae_sd": 0.035,
+      "baseline_mae": 2.988,
+      "baseline_mae_sd": 0.029,
+      "test_coverage": 0.868,
+      "test_coverage_sd": 0.02,
+      "coverage_by_third": [
+        0.93,
+        0.8,
+        0.87
+      ],
+      "interval_rel_width": 0.75,
+      "dropped_features": [
+        "attack_bonus",
+        "role_minion"
+      ],
+      "equation": "attack = 0.29\u00b7level + 2.8  (elite +1, solo +5.3)",
+      "interval_rule": "\u00b1 0.18\u00b7(result + 6)"
+    }
   },
   "4e_to_5e/damage_avg": {
     "direction": "4e_to_5e",
@@ -209,7 +356,7 @@
     "target_edition": "5e",
     "target": "damage_avg",
     "features": [
-      "role_solo"
+      "cr_num"
     ],
     "estimator": "explainable",
     "fit": "huber",
@@ -219,39 +366,189 @@
     "log_target": false,
     "log_features": [],
     "clip_min": 0.0,
-    "interval_offset": 11.0,
-    "n": 134,
-    "n_eval": 73,
-    "n_groups": 88,
+    "interval_offset": 13.0,
+    "n": 144,
+    "n_eval": 80,
+    "n_groups": 96,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 11.0,
+    "intercept": 8.0,
     "coef": [
-      5.8
+      1.0
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.28,
-    "r2": 0.025,
-    "r2_sd": 0.023,
-    "mae": 3.904,
-    "mae_sd": 0.105,
-    "baseline_mae": 4.732,
-    "baseline_mae_sd": 0.024,
-    "test_coverage": 0.819,
-    "test_coverage_sd": 0.012,
+    "conformal_quantile": 0.23,
+    "r2": 0.506,
+    "r2_sd": 0.013,
+    "mae": 4.415,
+    "mae_sd": 0.103,
+    "baseline_mae": 7.61,
+    "baseline_mae_sd": 0.082,
+    "test_coverage": 0.745,
+    "test_coverage_sd": 0.018,
     "coverage_by_third": [
-      0.76,
-      0.79,
-      0.83
+      0.87,
+      0.72,
+      0.66
     ],
-    "interval_rel_width": 1.163,
+    "interval_rel_width": 1.051,
     "dropped_features": [
+      "role_solo",
       "damage_avg",
-      "role_minion",
       "role_elite",
-      "level"
+      "role_minion"
     ],
-    "equation": "damage = 11  (solo +5.8)",
-    "interval_rule": "\u00b1 0.28\u00b7(result + 11)"
+    "equation": "damage = CR + 8",
+    "interval_rule": "\u00b1 0.23\u00b7(result + 13)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "level",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 13.0,
+      "n": 144,
+      "n_eval": 80,
+      "n_groups": 96,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 6.0,
+      "coef": [
+        0.6,
+        10.0
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.26,
+      "r2": 0.494,
+      "r2_sd": 0.011,
+      "mae": 4.485,
+      "mae_sd": 0.055,
+      "baseline_mae": 7.61,
+      "baseline_mae_sd": 0.082,
+      "test_coverage": 0.786,
+      "test_coverage_sd": 0.009,
+      "coverage_by_third": [
+        0.92,
+        0.73,
+        0.72
+      ],
+      "interval_rel_width": 1.13,
+      "dropped_features": [
+        "damage_avg",
+        "role_elite",
+        "role_minion"
+      ],
+      "equation": "damage = 0.6\u00b7level + 6  (solo +10)",
+      "interval_rule": "\u00b1 0.26\u00b7(result + 13)"
+    }
+  },
+  "4e_to_5e/damage_per_round": {
+    "direction": "4e_to_5e",
+    "source_edition": "4e",
+    "target_edition": "5e",
+    "target": "damage_per_round",
+    "features": [
+      "attacks_per_round",
+      "cr_num"
+    ],
+    "estimator": "explainable",
+    "fit": "huber",
+    "interval": "scaled",
+    "round_sig": 2,
+    "related_weight": 0.5,
+    "log_target": false,
+    "log_features": [],
+    "clip_min": 0.0,
+    "interval_offset": 20.0,
+    "n": 133,
+    "n_eval": 72,
+    "n_groups": 87,
+    "cv": "grouped 5-fold x10, scored on same-creature pairs",
+    "intercept": 2.1,
+    "coef": [
+      5.9,
+      2.5
+    ],
+    "alpha": 0.2,
+    "conformal_quantile": 0.3,
+    "r2": 0.451,
+    "r2_sd": 0.022,
+    "mae": 11.475,
+    "mae_sd": 0.336,
+    "baseline_mae": 20.22,
+    "baseline_mae_sd": 0.108,
+    "test_coverage": 0.747,
+    "test_coverage_sd": 0.017,
+    "coverage_by_third": [
+      0.96,
+      0.66,
+      0.62
+    ],
+    "interval_rel_width": 1.496,
+    "dropped_features": [
+      "role_solo",
+      "role_elite",
+      "damage_avg",
+      "role_minion"
+    ],
+    "equation": "damage/round = 5.9\u00b7attacks/round + 2.5\u00b7CR + 2.1",
+    "interval_rule": "\u00b1 0.3\u00b7(result + 20)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "attacks_per_round",
+        "level",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 20.0,
+      "n": 133,
+      "n_eval": 72,
+      "n_groups": 87,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": -2.3,
+      "coef": [
+        6.5,
+        1.4,
+        27.0
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.33,
+      "r2": 0.459,
+      "r2_sd": 0.014,
+      "mae": 12.091,
+      "mae_sd": 0.266,
+      "baseline_mae": 20.22,
+      "baseline_mae_sd": 0.108,
+      "test_coverage": 0.776,
+      "test_coverage_sd": 0.018,
+      "coverage_by_third": [
+        0.89,
+        0.7,
+        0.74
+      ],
+      "interval_rel_width": 1.603,
+      "dropped_features": [
+        "role_elite",
+        "role_minion",
+        "damage_avg"
+      ],
+      "equation": "damage/round = 6.5\u00b7attacks/round + 1.4\u00b7level - 2.3  (solo +27)",
+      "interval_rule": "\u00b1 0.33\u00b7(result + 20)"
+    }
   },
   "4e_to_5e/ability_str": {
     "direction": "4e_to_5e",
@@ -299,11 +596,60 @@
     ],
     "interval_rel_width": 0.819,
     "dropped_features": [
-      "level",
+      "cr_num",
       "role_minion"
     ],
     "equation": "STR = 0.71\u00b7STR + 2.2  (elite +1.9, solo +6.3)",
-    "interval_rule": "\u00b1 0.14\u00b7(result + 17)"
+    "interval_rule": "\u00b1 0.14\u00b7(result + 17)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "ability_str",
+        "role_elite",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 17.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 2.2,
+      "coef": [
+        0.71,
+        1.9,
+        6.3
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.14,
+      "r2": 0.736,
+      "r2_sd": 0.01,
+      "mae": 2.443,
+      "mae_sd": 0.046,
+      "baseline_mae": 4.983,
+      "baseline_mae_sd": 0.034,
+      "test_coverage": 0.8,
+      "test_coverage_sd": 0.016,
+      "coverage_by_third": [
+        0.64,
+        0.92,
+        0.84
+      ],
+      "interval_rel_width": 0.819,
+      "dropped_features": [
+        "level",
+        "role_minion"
+      ],
+      "equation": "STR = 0.71\u00b7STR + 2.2  (elite +1.9, solo +6.3)",
+      "interval_rule": "\u00b1 0.14\u00b7(result + 17)"
+    }
   },
   "4e_to_5e/ability_dex": {
     "direction": "4e_to_5e",
@@ -312,7 +658,6 @@
     "target": "ability_dex",
     "features": [
       "ability_dex",
-      "level",
       "role_solo"
     ],
     "estimator": "explainable",
@@ -328,34 +673,83 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 8.7,
+    "intercept": 8.2,
     "coef": [
-      0.37,
-      -0.13,
-      -2.6
+      0.31,
+      -3.1
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.13,
-    "r2": 0.273,
-    "r2_sd": 0.014,
-    "mae": 1.866,
-    "mae_sd": 0.023,
+    "conformal_quantile": 0.14,
+    "r2": 0.267,
+    "r2_sd": 0.02,
+    "mae": 1.95,
+    "mae_sd": 0.029,
     "baseline_mae": 2.508,
     "baseline_mae_sd": 0.011,
-    "test_coverage": 0.793,
-    "test_coverage_sd": 0.01,
+    "test_coverage": 0.843,
+    "test_coverage_sd": 0.015,
     "coverage_by_third": [
-      0.79,
-      0.78,
-      0.81
+      0.81,
+      0.89,
+      0.83
     ],
-    "interval_rel_width": 0.537,
+    "interval_rel_width": 0.586,
     "dropped_features": [
-      "role_elite",
-      "role_minion"
+      "cr_num",
+      "role_minion",
+      "role_elite"
     ],
-    "equation": "DEX = 0.37\u00b7DEX - 0.13\u00b7level + 8.7  (solo -2.6)",
-    "interval_rule": "\u00b1 0.13\u00b7(result + 13)"
+    "equation": "DEX = 0.31\u00b7DEX + 8.2  (solo -3.1)",
+    "interval_rule": "\u00b1 0.14\u00b7(result + 13)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "ability_dex",
+        "level",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 13.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 8.7,
+      "coef": [
+        0.37,
+        -0.13,
+        -2.6
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.13,
+      "r2": 0.273,
+      "r2_sd": 0.014,
+      "mae": 1.866,
+      "mae_sd": 0.023,
+      "baseline_mae": 2.508,
+      "baseline_mae_sd": 0.011,
+      "test_coverage": 0.793,
+      "test_coverage_sd": 0.01,
+      "coverage_by_third": [
+        0.79,
+        0.78,
+        0.81
+      ],
+      "interval_rel_width": 0.537,
+      "dropped_features": [
+        "role_elite",
+        "role_minion"
+      ],
+      "equation": "DEX = 0.37\u00b7DEX - 0.13\u00b7level + 8.7  (solo -2.6)",
+      "interval_rule": "\u00b1 0.13\u00b7(result + 13)"
+    }
   },
   "4e_to_5e/ability_con": {
     "direction": "4e_to_5e",
@@ -364,8 +758,7 @@
     "target": "ability_con",
     "features": [
       "ability_con",
-      "level",
-      "role_elite",
+      "cr_num",
       "role_solo"
     ],
     "estimator": "explainable",
@@ -381,34 +774,84 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 8.3,
+    "intercept": 8.4,
     "coef": [
-      0.24,
-      0.24,
-      0.99,
-      5.6
+      0.28,
+      0.4,
+      1.8
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.11,
-    "r2": 0.744,
-    "r2_sd": 0.006,
-    "mae": 1.611,
-    "mae_sd": 0.022,
+    "conformal_quantile": 0.1,
+    "r2": 0.774,
+    "r2_sd": 0.008,
+    "mae": 1.432,
+    "mae_sd": 0.033,
     "baseline_mae": 3.282,
     "baseline_mae_sd": 0.03,
-    "test_coverage": 0.905,
-    "test_coverage_sd": 0.01,
+    "test_coverage": 0.864,
+    "test_coverage_sd": 0.012,
     "coverage_by_third": [
-      0.82,
-      0.95,
-      0.94
+      0.83,
+      0.89,
+      0.88
     ],
-    "interval_rel_width": 0.432,
+    "interval_rel_width": 0.38,
     "dropped_features": [
+      "role_elite",
       "role_minion"
     ],
-    "equation": "CON = 0.24\u00b7CON + 0.24\u00b7level + 8.3  (elite +0.99, solo +5.6)",
-    "interval_rule": "\u00b1 0.11\u00b7(result + 16)"
+    "equation": "CON = 0.28\u00b7CON + 0.4\u00b7CR + 8.4  (solo +1.8)",
+    "interval_rule": "\u00b1 0.1\u00b7(result + 16)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "ability_con",
+        "level",
+        "role_elite",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 16.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 8.3,
+      "coef": [
+        0.24,
+        0.24,
+        0.99,
+        5.6
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.11,
+      "r2": 0.744,
+      "r2_sd": 0.006,
+      "mae": 1.611,
+      "mae_sd": 0.022,
+      "baseline_mae": 3.282,
+      "baseline_mae_sd": 0.03,
+      "test_coverage": 0.905,
+      "test_coverage_sd": 0.01,
+      "coverage_by_third": [
+        0.82,
+        0.95,
+        0.94
+      ],
+      "interval_rel_width": 0.432,
+      "dropped_features": [
+        "role_minion"
+      ],
+      "equation": "CON = 0.24\u00b7CON + 0.24\u00b7level + 8.3  (elite +0.99, solo +5.6)",
+      "interval_rule": "\u00b1 0.11\u00b7(result + 16)"
+    }
   },
   "4e_to_5e/ability_int": {
     "direction": "4e_to_5e",
@@ -452,13 +895,60 @@
     ],
     "interval_rel_width": 0.88,
     "dropped_features": [
-      "level",
       "role_solo",
       "role_minion",
+      "cr_num",
       "role_elite"
     ],
     "equation": "INT = 0.76\u00b7INT + 2.2",
-    "interval_rule": "\u00b1 0.16\u00b7(result + 10)"
+    "interval_rule": "\u00b1 0.16\u00b7(result + 10)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "ability_int"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 10.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 2.2,
+      "coef": [
+        0.76
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.16,
+      "r2": 0.735,
+      "r2_sd": 0.005,
+      "mae": 2.271,
+      "mae_sd": 0.018,
+      "baseline_mae": 4.521,
+      "baseline_mae_sd": 0.014,
+      "test_coverage": 0.762,
+      "test_coverage_sd": 0.021,
+      "coverage_by_third": [
+        0.76,
+        0.67,
+        0.85
+      ],
+      "interval_rel_width": 0.88,
+      "dropped_features": [
+        "level",
+        "role_solo",
+        "role_minion",
+        "role_elite"
+      ],
+      "equation": "INT = 0.76\u00b7INT + 2.2",
+      "interval_rule": "\u00b1 0.16\u00b7(result + 10)"
+    }
   },
   "4e_to_5e/ability_wis": {
     "direction": "4e_to_5e",
@@ -467,7 +957,7 @@
     "target": "ability_wis",
     "features": [
       "ability_wis",
-      "level"
+      "cr_num"
     ],
     "estimator": "explainable",
     "fit": "huber",
@@ -482,34 +972,82 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 7.6,
+    "intercept": 8.0,
     "coef": [
       0.21,
-      0.16
+      0.2
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.15,
-    "r2": 0.254,
-    "r2_sd": 0.016,
-    "mae": 1.903,
-    "mae_sd": 0.019,
+    "conformal_quantile": 0.14,
+    "r2": 0.27,
+    "r2_sd": 0.017,
+    "mae": 1.887,
+    "mae_sd": 0.034,
     "baseline_mae": 2.316,
     "baseline_mae_sd": 0.021,
-    "test_coverage": 0.869,
+    "test_coverage": 0.866,
     "test_coverage_sd": 0.016,
     "coverage_by_third": [
-      0.85,
+      0.84,
       0.86,
       0.89
     ],
-    "interval_rel_width": 0.614,
+    "interval_rel_width": 0.577,
     "dropped_features": [
-      "role_minion",
       "role_solo",
-      "role_elite"
+      "role_elite",
+      "role_minion"
     ],
-    "equation": "WIS = 0.21\u00b7WIS + 0.16\u00b7level + 7.6",
-    "interval_rule": "\u00b1 0.15\u00b7(result + 12)"
+    "equation": "WIS = 0.21\u00b7WIS + 0.2\u00b7CR + 8",
+    "interval_rule": "\u00b1 0.14\u00b7(result + 12)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "ability_wis",
+        "level"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 12.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 7.6,
+      "coef": [
+        0.21,
+        0.16
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.15,
+      "r2": 0.254,
+      "r2_sd": 0.016,
+      "mae": 1.903,
+      "mae_sd": 0.019,
+      "baseline_mae": 2.316,
+      "baseline_mae_sd": 0.021,
+      "test_coverage": 0.869,
+      "test_coverage_sd": 0.016,
+      "coverage_by_third": [
+        0.85,
+        0.86,
+        0.89
+      ],
+      "interval_rel_width": 0.614,
+      "dropped_features": [
+        "role_minion",
+        "role_solo",
+        "role_elite"
+      ],
+      "equation": "WIS = 0.21\u00b7WIS + 0.16\u00b7level + 7.6",
+      "interval_rule": "\u00b1 0.15\u00b7(result + 12)"
+    }
   },
   "4e_to_5e/ability_cha": {
     "direction": "4e_to_5e",
@@ -518,8 +1056,7 @@
     "target": "ability_cha",
     "features": [
       "ability_cha",
-      "role_elite",
-      "role_solo"
+      "cr_num"
     ],
     "estimator": "explainable",
     "fit": "huber",
@@ -534,34 +1071,83 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 1.9,
+    "intercept": 2.6,
     "coef": [
-      0.62,
-      1.0,
-      5.1
+      0.48,
+      0.35
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.19,
-    "r2": 0.575,
-    "r2_sd": 0.015,
-    "mae": 2.781,
-    "mae_sd": 0.057,
+    "conformal_quantile": 0.17,
+    "r2": 0.607,
+    "r2_sd": 0.018,
+    "mae": 2.669,
+    "mae_sd": 0.056,
     "baseline_mae": 4.618,
     "baseline_mae_sd": 0.016,
-    "test_coverage": 0.823,
-    "test_coverage_sd": 0.02,
+    "test_coverage": 0.761,
+    "test_coverage_sd": 0.014,
     "coverage_by_third": [
-      0.88,
-      0.7,
-      0.89
+      0.84,
+      0.61,
+      0.83
     ],
-    "interval_rel_width": 0.908,
+    "interval_rel_width": 0.853,
     "dropped_features": [
-      "level",
+      "role_elite",
+      "role_solo",
       "role_minion"
     ],
-    "equation": "CHA = 0.62\u00b7CHA + 1.9  (elite +1, solo +5.1)",
-    "interval_rule": "\u00b1 0.19\u00b7(result + 11)"
+    "equation": "CHA = 0.48\u00b7CHA + 0.35\u00b7CR + 2.6",
+    "interval_rule": "\u00b1 0.17\u00b7(result + 11)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "ability_cha",
+        "role_elite",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 11.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 1.9,
+      "coef": [
+        0.62,
+        1.0,
+        5.1
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.19,
+      "r2": 0.575,
+      "r2_sd": 0.015,
+      "mae": 2.781,
+      "mae_sd": 0.057,
+      "baseline_mae": 4.618,
+      "baseline_mae_sd": 0.016,
+      "test_coverage": 0.823,
+      "test_coverage_sd": 0.02,
+      "coverage_by_third": [
+        0.88,
+        0.7,
+        0.89
+      ],
+      "interval_rel_width": 0.908,
+      "dropped_features": [
+        "level",
+        "role_minion"
+      ],
+      "equation": "CHA = 0.62\u00b7CHA + 1.9  (elite +1, solo +5.1)",
+      "interval_rule": "\u00b1 0.19\u00b7(result + 11)"
+    }
   },
   "4e_to_5e/save_dex": {
     "direction": "4e_to_5e",
@@ -570,7 +1156,8 @@
     "target": "save_dex",
     "features": [
       "ability_dex",
-      "level"
+      "cr_num",
+      "role_solo"
     ],
     "estimator": "explainable",
     "fit": "huber",
@@ -587,32 +1174,80 @@
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
     "intercept": 1.4,
     "coef": [
-      0.16,
-      0.092
+      0.17,
+      0.15,
+      -1.1
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.2,
-    "r2": 0.185,
-    "r2_sd": 0.101,
-    "mae": 1.173,
-    "mae_sd": 0.099,
+    "conformal_quantile": 0.19,
+    "r2": 0.215,
+    "r2_sd": 0.074,
+    "mae": 1.079,
+    "mae_sd": 0.074,
     "baseline_mae": 1.489,
     "baseline_mae_sd": 0.042,
-    "test_coverage": 0.852,
-    "test_coverage_sd": 0.023,
+    "test_coverage": 0.87,
+    "test_coverage_sd": 0.034,
     "coverage_by_third": [
       0.77,
-      0.86,
-      0.93
+      0.93,
+      0.91
     ],
-    "interval_rel_width": 0.921,
+    "interval_rel_width": 0.937,
     "dropped_features": [
       "role_elite",
-      "role_solo",
       "role_minion"
     ],
-    "equation": "DEX save = 0.16\u00b7DEX + 0.092\u00b7level + 1.4",
-    "interval_rule": "\u00b1 0.2\u00b7(result + 6)"
+    "equation": "DEX save = 0.17\u00b7DEX + 0.15\u00b7CR + 1.4  (solo -1.1)",
+    "interval_rule": "\u00b1 0.19\u00b7(result + 6)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "ability_dex",
+        "level"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 6.0,
+      "n": 31,
+      "n_eval": 27,
+      "n_groups": 24,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 1.4,
+      "coef": [
+        0.16,
+        0.092
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.2,
+      "r2": 0.185,
+      "r2_sd": 0.101,
+      "mae": 1.173,
+      "mae_sd": 0.099,
+      "baseline_mae": 1.489,
+      "baseline_mae_sd": 0.042,
+      "test_coverage": 0.852,
+      "test_coverage_sd": 0.023,
+      "coverage_by_third": [
+        0.77,
+        0.86,
+        0.93
+      ],
+      "interval_rel_width": 0.921,
+      "dropped_features": [
+        "role_elite",
+        "role_solo",
+        "role_minion"
+      ],
+      "equation": "DEX save = 0.16\u00b7DEX + 0.092\u00b7level + 1.4",
+      "interval_rule": "\u00b1 0.2\u00b7(result + 6)"
+    }
   },
   "4e_to_5e/save_con": {
     "direction": "4e_to_5e",
@@ -620,7 +1255,8 @@
     "target_edition": "5e",
     "target": "save_con",
     "features": [
-      "level",
+      "ability_con",
+      "cr_num",
       "role_solo"
     ],
     "estimator": "explainable",
@@ -636,34 +1272,82 @@
     "n_eval": 27,
     "n_groups": 25,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 3.6,
+    "intercept": 0.7,
     "coef": [
-      0.28,
-      3.1
+      0.16,
+      0.35,
+      1.7
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.17,
-    "r2": 0.359,
-    "r2_sd": 0.088,
-    "mae": 1.917,
-    "mae_sd": 0.24,
+    "conformal_quantile": 0.13,
+    "r2": 0.409,
+    "r2_sd": 0.052,
+    "mae": 1.678,
+    "mae_sd": 0.188,
     "baseline_mae": 3.124,
     "baseline_mae_sd": 0.126,
-    "test_coverage": 0.874,
-    "test_coverage_sd": 0.018,
+    "test_coverage": 0.867,
+    "test_coverage_sd": 0.03,
     "coverage_by_third": [
-      0.76,
-      0.86,
+      0.67,
+      0.93,
       1.0
     ],
-    "interval_rel_width": 1.381,
+    "interval_rel_width": 1.308,
     "dropped_features": [
       "role_elite",
-      "ability_con",
       "role_minion"
     ],
-    "equation": "CON save = 0.28\u00b7level + 3.6  (solo +3.1)",
-    "interval_rule": "\u00b1 0.17\u00b7(result + 8)"
+    "equation": "CON save = 0.16\u00b7CON + 0.35\u00b7CR + 0.7  (solo +1.7)",
+    "interval_rule": "\u00b1 0.13\u00b7(result + 8)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "level",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 8.0,
+      "n": 33,
+      "n_eval": 27,
+      "n_groups": 25,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 3.6,
+      "coef": [
+        0.28,
+        3.1
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.17,
+      "r2": 0.359,
+      "r2_sd": 0.088,
+      "mae": 1.917,
+      "mae_sd": 0.24,
+      "baseline_mae": 3.124,
+      "baseline_mae_sd": 0.126,
+      "test_coverage": 0.874,
+      "test_coverage_sd": 0.018,
+      "coverage_by_third": [
+        0.76,
+        0.86,
+        1.0
+      ],
+      "interval_rel_width": 1.381,
+      "dropped_features": [
+        "role_elite",
+        "ability_con",
+        "role_minion"
+      ],
+      "equation": "CON save = 0.28\u00b7level + 3.6  (solo +3.1)",
+      "interval_rule": "\u00b1 0.17\u00b7(result + 8)"
+    }
   },
   "4e_to_5e/save_wis": {
     "direction": "4e_to_5e",
@@ -671,8 +1355,7 @@
     "target_edition": "5e",
     "target": "save_wis",
     "features": [
-      "level",
-      "role_elite",
+      "cr_num",
       "role_solo"
     ],
     "estimator": "explainable",
@@ -688,34 +1371,83 @@
     "n_eval": 35,
     "n_groups": 34,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 1.5,
+    "intercept": 2.1,
     "coef": [
-      0.23,
-      1.6,
-      1.9
+      0.38,
+      -1.1
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.19,
-    "r2": 0.211,
-    "r2_sd": 0.055,
-    "mae": 1.652,
-    "mae_sd": 0.076,
+    "conformal_quantile": 0.14,
+    "r2": 0.469,
+    "r2_sd": 0.031,
+    "mae": 1.208,
+    "mae_sd": 0.042,
     "baseline_mae": 2.363,
     "baseline_mae_sd": 0.049,
-    "test_coverage": 0.791,
-    "test_coverage_sd": 0.029,
+    "test_coverage": 0.771,
+    "test_coverage_sd": 0.034,
     "coverage_by_third": [
-      0.65,
-      0.72,
-      1.0
+      0.64,
+      0.66,
+      0.98
     ],
-    "interval_rel_width": 0.879,
+    "interval_rel_width": 0.644,
     "dropped_features": [
+      "role_elite",
       "ability_wis",
       "role_minion"
     ],
-    "equation": "WIS save = 0.23\u00b7level + 1.5  (elite +1.6, solo +1.9)",
-    "interval_rule": "\u00b1 0.19\u00b7(result + 6)"
+    "equation": "WIS save = 0.38\u00b7CR + 2.1  (solo -1.1)",
+    "interval_rule": "\u00b1 0.14\u00b7(result + 6)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "level",
+        "role_elite",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 6.0,
+      "n": 49,
+      "n_eval": 35,
+      "n_groups": 34,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 1.5,
+      "coef": [
+        0.23,
+        1.6,
+        1.9
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.19,
+      "r2": 0.211,
+      "r2_sd": 0.055,
+      "mae": 1.652,
+      "mae_sd": 0.076,
+      "baseline_mae": 2.363,
+      "baseline_mae_sd": 0.049,
+      "test_coverage": 0.791,
+      "test_coverage_sd": 0.029,
+      "coverage_by_third": [
+        0.65,
+        0.72,
+        1.0
+      ],
+      "interval_rel_width": 0.879,
+      "dropped_features": [
+        "ability_wis",
+        "role_minion"
+      ],
+      "equation": "WIS save = 0.23\u00b7level + 1.5  (elite +1.6, solo +1.9)",
+      "interval_rule": "\u00b1 0.19\u00b7(result + 6)"
+    }
   },
   "4e_to_5e/save_cha": {
     "direction": "4e_to_5e",
@@ -723,8 +1455,7 @@
     "target_edition": "5e",
     "target": "save_cha",
     "features": [
-      "level",
-      "role_elite",
+      "cr_num",
       "role_solo"
     ],
     "estimator": "explainable",
@@ -740,34 +1471,83 @@
     "n_eval": 30,
     "n_groups": 29,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 1.4,
+    "intercept": 2.3,
     "coef": [
-      0.25,
-      2.6,
-      3.2
+      0.43,
+      -0.71
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.15,
-    "r2": 0.37,
-    "r2_sd": 0.068,
-    "mae": 1.675,
-    "mae_sd": 0.128,
+    "conformal_quantile": 0.12,
+    "r2": 0.533,
+    "r2_sd": 0.02,
+    "mae": 1.328,
+    "mae_sd": 0.06,
     "baseline_mae": 2.496,
     "baseline_mae_sd": 0.078,
-    "test_coverage": 0.8,
-    "test_coverage_sd": 0.067,
+    "test_coverage": 0.767,
+    "test_coverage_sd": 0.026,
     "coverage_by_third": [
-      0.67,
-      0.84,
-      0.88
+      0.66,
+      0.78,
+      0.85
     ],
-    "interval_rel_width": 0.686,
+    "interval_rel_width": 0.581,
     "dropped_features": [
       "ability_cha",
+      "role_elite",
       "role_minion"
     ],
-    "equation": "CHA save = 0.25\u00b7level + 1.4  (elite +2.6, solo +3.2)",
-    "interval_rule": "\u00b1 0.15\u00b7(result + 7.5)"
+    "equation": "CHA save = 0.43\u00b7CR + 2.3  (solo -0.71)",
+    "interval_rule": "\u00b1 0.12\u00b7(result + 7.5)",
+    "target_scale": "cr_num",
+    "direct": {
+      "features": [
+        "level",
+        "role_elite",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 7.5,
+      "n": 42,
+      "n_eval": 30,
+      "n_groups": 29,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 1.4,
+      "coef": [
+        0.25,
+        2.6,
+        3.2
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.15,
+      "r2": 0.37,
+      "r2_sd": 0.068,
+      "mae": 1.675,
+      "mae_sd": 0.128,
+      "baseline_mae": 2.496,
+      "baseline_mae_sd": 0.078,
+      "test_coverage": 0.8,
+      "test_coverage_sd": 0.067,
+      "coverage_by_third": [
+        0.67,
+        0.84,
+        0.88
+      ],
+      "interval_rel_width": 0.686,
+      "dropped_features": [
+        "ability_cha",
+        "role_minion"
+      ],
+      "equation": "CHA save = 0.25\u00b7level + 1.4  (elite +2.6, solo +3.2)",
+      "interval_rule": "\u00b1 0.15\u00b7(result + 7.5)"
+    }
   },
   "5e_to_4e/level": {
     "direction": "5e_to_4e",
@@ -825,9 +1605,10 @@
     "target_edition": "4e",
     "target": "hp",
     "features": [
-      "hp",
+      "level",
       "role_elite",
-      "role_solo*cr_num"
+      "role_solo*level",
+      "role_brute"
     ],
     "estimator": "explainable",
     "fit": "huber",
@@ -842,36 +1623,88 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 39.0,
+    "intercept": 13.0,
     "coef": [
-      0.87,
-      140.0,
-      26.0
+      9.0,
+      130.0,
+      37.0,
+      24.0
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.23,
-    "r2": 0.928,
-    "r2_sd": 0.003,
-    "mae": 51.518,
-    "mae_sd": 1.21,
+    "conformal_quantile": 0.1,
+    "r2": 0.988,
+    "r2_sd": 0.0,
+    "mae": 19.206,
+    "mae_sd": 0.22,
     "baseline_mae": 201.075,
     "baseline_mae_sd": 2.038,
-    "test_coverage": 0.847,
-    "test_coverage_sd": 0.01,
+    "test_coverage": 0.848,
+    "test_coverage_sd": 0.013,
     "coverage_by_third": [
-      0.92,
-      0.86,
-      0.76
+      0.95,
+      0.8,
+      0.8
     ],
-    "interval_rel_width": 1.063,
+    "interval_rel_width": 0.444,
     "dropped_features": [
-      "cr_num"
+      "hp"
     ],
     "fixed_by_role": {
       "minion": 1.0
     },
-    "equation": "HP = 0.87\u00b7HP + 39  (elite +140, solo +26\u00b7CR; minion = 1)",
-    "interval_rule": "\u00b1 0.23\u00b7(result + 140)"
+    "equation": "HP = 9\u00b7level + 13  (elite +130, solo +37\u00b7level, brute +24; minion = 1)",
+    "interval_rule": "\u00b1 0.1\u00b7(result + 140)",
+    "target_scale": "level",
+    "direct": {
+      "features": [
+        "hp",
+        "role_elite",
+        "role_solo*cr_num"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 140.0,
+      "n": 148,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 39.0,
+      "coef": [
+        0.87,
+        140.0,
+        26.0
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.23,
+      "r2": 0.928,
+      "r2_sd": 0.003,
+      "mae": 51.518,
+      "mae_sd": 1.21,
+      "baseline_mae": 201.075,
+      "baseline_mae_sd": 2.038,
+      "test_coverage": 0.847,
+      "test_coverage_sd": 0.01,
+      "coverage_by_third": [
+        0.92,
+        0.86,
+        0.76
+      ],
+      "interval_rel_width": 1.063,
+      "dropped_features": [
+        "cr_num"
+      ],
+      "fixed_by_role": {
+        "minion": 1.0
+      },
+      "equation": "HP = 0.87\u00b7HP + 39  (elite +140, solo +26\u00b7CR; minion = 1)",
+      "interval_rule": "\u00b1 0.23\u00b7(result + 140)"
+    }
   },
   "5e_to_4e/ac": {
     "direction": "5e_to_4e",
@@ -880,10 +1713,11 @@
     "target": "ac",
     "features": [
       "ac",
-      "cr_num",
-      "role_minion",
+      "level",
       "role_elite",
-      "role_solo"
+      "role_solo",
+      "role_brute",
+      "role_soldier"
     ],
     "estimator": "explainable",
     "fit": "huber",
@@ -898,33 +1732,86 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 14.5,
+    "intercept": 13.4,
     "coef": [
-      0.33,
-      0.97,
-      3.4,
-      1.6,
-      -6.2
+      0.067,
+      0.96,
+      1.7,
+      2.2,
+      -1.9,
+      1.7
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.12,
-    "r2": 0.683,
-    "r2_sd": 0.016,
-    "mae": 3.191,
-    "mae_sd": 0.07,
+    "conformal_quantile": 0.03,
+    "r2": 0.977,
+    "r2_sd": 0.001,
+    "mae": 0.829,
+    "mae_sd": 0.02,
     "baseline_mae": 6.054,
     "baseline_mae_sd": 0.027,
-    "test_coverage": 0.907,
-    "test_coverage_sd": 0.021,
+    "test_coverage": 0.815,
+    "test_coverage_sd": 0.017,
     "coverage_by_third": [
-      0.92,
-      0.93,
-      0.87
+      0.79,
+      0.77,
+      0.88
     ],
-    "interval_rel_width": 0.52,
-    "dropped_features": [],
-    "equation": "AC = 0.33\u00b7AC + 0.97\u00b7CR + 14.5  (minion +3.4, elite +1.6, solo -6.2)",
-    "interval_rule": "\u00b1 0.12\u00b7(result + 26)"
+    "interval_rel_width": 0.115,
+    "dropped_features": [
+      "role_minion"
+    ],
+    "equation": "AC = 0.067\u00b7AC + 0.96\u00b7level + 13.4  (elite +1.7, solo +2.2, brute -1.9, soldier +1.7)",
+    "interval_rule": "\u00b1 0.03\u00b7(result + 26)",
+    "target_scale": "level",
+    "direct": {
+      "features": [
+        "ac",
+        "cr_num",
+        "role_minion",
+        "role_elite",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 26.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 14.5,
+      "coef": [
+        0.33,
+        0.97,
+        3.4,
+        1.6,
+        -6.2
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.12,
+      "r2": 0.683,
+      "r2_sd": 0.016,
+      "mae": 3.191,
+      "mae_sd": 0.07,
+      "baseline_mae": 6.054,
+      "baseline_mae_sd": 0.027,
+      "test_coverage": 0.907,
+      "test_coverage_sd": 0.021,
+      "coverage_by_third": [
+        0.92,
+        0.93,
+        0.87
+      ],
+      "interval_rel_width": 0.52,
+      "dropped_features": [],
+      "equation": "AC = 0.33\u00b7AC + 0.97\u00b7CR + 14.5  (minion +3.4, elite +1.6, solo -6.2)",
+      "interval_rule": "\u00b1 0.12\u00b7(result + 26)"
+    }
   },
   "5e_to_4e/fort": {
     "direction": "5e_to_4e",
@@ -933,9 +1820,7 @@
     "target": "fort",
     "features": [
       "ability_str",
-      "ability_con",
-      "cr_num",
-      "role_solo"
+      "level"
     ],
     "estimator": "explainable",
     "fit": "huber",
@@ -950,35 +1835,86 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 6.6,
+    "intercept": 9.5,
     "coef": [
-      0.36,
-      0.49,
-      0.74,
-      -7.6
+      0.23,
+      0.99
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.12,
-    "r2": 0.73,
-    "r2_sd": 0.008,
-    "mae": 3.332,
-    "mae_sd": 0.06,
+    "conformal_quantile": 0.06,
+    "r2": 0.942,
+    "r2_sd": 0.001,
+    "mae": 1.559,
+    "mae_sd": 0.019,
     "baseline_mae": 6.363,
     "baseline_mae_sd": 0.046,
-    "test_coverage": 0.887,
-    "test_coverage_sd": 0.018,
+    "test_coverage": 0.816,
+    "test_coverage_sd": 0.017,
     "coverage_by_third": [
-      0.84,
-      0.98,
-      0.84
+      0.8,
+      0.88,
+      0.77
     ],
-    "interval_rel_width": 0.512,
+    "interval_rel_width": 0.219,
     "dropped_features": [
+      "role_solo",
       "role_elite",
-      "role_minion"
+      "role_minion",
+      "ability_con"
     ],
-    "equation": "Fort = 0.36\u00b7STR + 0.49\u00b7CON + 0.74\u00b7CR + 6.6  (solo -7.6)",
-    "interval_rule": "\u00b1 0.12\u00b7(result + 25)"
+    "equation": "Fort = 0.23\u00b7STR + 0.99\u00b7level + 9.5",
+    "interval_rule": "\u00b1 0.06\u00b7(result + 25)",
+    "target_scale": "level",
+    "direct": {
+      "features": [
+        "ability_str",
+        "ability_con",
+        "cr_num",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 25.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 6.6,
+      "coef": [
+        0.36,
+        0.49,
+        0.74,
+        -7.6
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.12,
+      "r2": 0.73,
+      "r2_sd": 0.008,
+      "mae": 3.332,
+      "mae_sd": 0.06,
+      "baseline_mae": 6.363,
+      "baseline_mae_sd": 0.046,
+      "test_coverage": 0.887,
+      "test_coverage_sd": 0.018,
+      "coverage_by_third": [
+        0.84,
+        0.98,
+        0.84
+      ],
+      "interval_rel_width": 0.512,
+      "dropped_features": [
+        "role_elite",
+        "role_minion"
+      ],
+      "equation": "Fort = 0.36\u00b7STR + 0.49\u00b7CON + 0.74\u00b7CR + 6.6  (solo -7.6)",
+      "interval_rule": "\u00b1 0.12\u00b7(result + 25)"
+    }
   },
   "5e_to_4e/ref": {
     "direction": "5e_to_4e",
@@ -986,8 +1922,10 @@
     "target_edition": "4e",
     "target": "ref",
     "features": [
-      "cr_num",
-      "role_solo"
+      "ability_dex",
+      "level",
+      "role_solo",
+      "role_brute"
     ],
     "estimator": "explainable",
     "fit": "huber",
@@ -1002,34 +1940,83 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 16.1,
+    "intercept": 8.9,
     "coef": [
-      1.1,
-      -5.2
+      0.24,
+      0.96,
+      3.3,
+      -1.9
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.13,
-    "r2": 0.703,
-    "r2_sd": 0.009,
-    "mae": 3.081,
-    "mae_sd": 0.046,
+    "conformal_quantile": 0.06,
+    "r2": 0.939,
+    "r2_sd": 0.003,
+    "mae": 1.37,
+    "mae_sd": 0.032,
     "baseline_mae": 5.785,
     "baseline_mae_sd": 0.028,
-    "test_coverage": 0.915,
-    "test_coverage_sd": 0.009,
+    "test_coverage": 0.795,
+    "test_coverage_sd": 0.007,
     "coverage_by_third": [
-      0.95,
-      0.93,
-      0.87
+      0.7,
+      0.81,
+      0.88
     ],
-    "interval_rel_width": 0.563,
+    "interval_rel_width": 0.212,
     "dropped_features": [
       "role_elite",
-      "ability_dex",
       "role_minion"
     ],
-    "equation": "Ref = 1.1\u00b7CR + 16.1  (solo -5.2)",
-    "interval_rule": "\u00b1 0.13\u00b7(result + 23)"
+    "equation": "Ref = 0.24\u00b7DEX + 0.96\u00b7level + 8.9  (solo +3.3, brute -1.9)",
+    "interval_rule": "\u00b1 0.06\u00b7(result + 23)",
+    "target_scale": "level",
+    "direct": {
+      "features": [
+        "cr_num",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 23.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 16.1,
+      "coef": [
+        1.1,
+        -5.2
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.13,
+      "r2": 0.703,
+      "r2_sd": 0.009,
+      "mae": 3.081,
+      "mae_sd": 0.046,
+      "baseline_mae": 5.785,
+      "baseline_mae_sd": 0.028,
+      "test_coverage": 0.915,
+      "test_coverage_sd": 0.009,
+      "coverage_by_third": [
+        0.95,
+        0.93,
+        0.87
+      ],
+      "interval_rel_width": 0.563,
+      "dropped_features": [
+        "role_elite",
+        "ability_dex",
+        "role_minion"
+      ],
+      "equation": "Ref = 1.1\u00b7CR + 16.1  (solo -5.2)",
+      "interval_rule": "\u00b1 0.13\u00b7(result + 23)"
+    }
   },
   "5e_to_4e/will": {
     "direction": "5e_to_4e",
@@ -1038,7 +2025,8 @@
     "target": "will",
     "features": [
       "ability_cha",
-      "cr_num",
+      "level",
+      "role_elite",
       "role_solo"
     ],
     "estimator": "explainable",
@@ -1054,35 +2042,85 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 13.1,
+    "intercept": 9.1,
     "coef": [
-      0.34,
-      0.93,
-      -6.9
+      0.22,
+      0.92,
+      1.7,
+      1.2
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.14,
-    "r2": 0.676,
-    "r2_sd": 0.008,
-    "mae": 3.143,
-    "mae_sd": 0.039,
+    "conformal_quantile": 0.06,
+    "r2": 0.926,
+    "r2_sd": 0.003,
+    "mae": 1.416,
+    "mae_sd": 0.024,
     "baseline_mae": 5.778,
     "baseline_mae_sd": 0.03,
-    "test_coverage": 0.895,
-    "test_coverage_sd": 0.016,
+    "test_coverage": 0.836,
+    "test_coverage_sd": 0.019,
     "coverage_by_third": [
-      0.91,
-      0.91,
-      0.86
+      0.84,
+      0.93,
+      0.73
     ],
-    "interval_rel_width": 0.608,
+    "interval_rel_width": 0.242,
     "dropped_features": [
       "ability_wis",
-      "role_minion",
-      "role_elite"
+      "role_minion"
     ],
-    "equation": "Will = 0.34\u00b7CHA + 0.93\u00b7CR + 13.1  (solo -6.9)",
-    "interval_rule": "\u00b1 0.14\u00b7(result + 23)"
+    "equation": "Will = 0.22\u00b7CHA + 0.92\u00b7level + 9.1  (elite +1.7, solo +1.2)",
+    "interval_rule": "\u00b1 0.06\u00b7(result + 23)",
+    "target_scale": "level",
+    "direct": {
+      "features": [
+        "ability_cha",
+        "cr_num",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 23.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 13.1,
+      "coef": [
+        0.34,
+        0.93,
+        -6.9
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.14,
+      "r2": 0.676,
+      "r2_sd": 0.008,
+      "mae": 3.143,
+      "mae_sd": 0.039,
+      "baseline_mae": 5.778,
+      "baseline_mae_sd": 0.03,
+      "test_coverage": 0.895,
+      "test_coverage_sd": 0.016,
+      "coverage_by_third": [
+        0.91,
+        0.91,
+        0.86
+      ],
+      "interval_rel_width": 0.608,
+      "dropped_features": [
+        "ability_wis",
+        "role_minion",
+        "role_elite"
+      ],
+      "equation": "Will = 0.34\u00b7CHA + 0.93\u00b7CR + 13.1  (solo -6.9)",
+      "interval_rule": "\u00b1 0.14\u00b7(result + 23)"
+    }
   },
   "5e_to_4e/attack_bonus": {
     "direction": "5e_to_4e",
@@ -1090,8 +2128,10 @@
     "target_edition": "4e",
     "target": "attack_bonus",
     "features": [
-      "cr_num",
-      "role_solo"
+      "level",
+      "role_brute",
+      "role_artillery",
+      "role_soldier"
     ],
     "estimator": "explainable",
     "fit": "huber",
@@ -1102,38 +2142,90 @@
     "log_features": [],
     "clip_min": 0.0,
     "interval_offset": 16.0,
-    "n": 154,
-    "n_eval": 87,
-    "n_groups": 104,
+    "n": 149,
+    "n_eval": 85,
+    "n_groups": 101,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 9.5,
+    "intercept": 5.0,
     "coef": [
-      1.1,
-      -8.5
+      1.0,
+      -1.3,
+      -1.4,
+      1.2
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.19,
-    "r2": 0.639,
-    "r2_sd": 0.016,
-    "mae": 3.181,
-    "mae_sd": 0.063,
-    "baseline_mae": 5.59,
-    "baseline_mae_sd": 0.028,
-    "test_coverage": 0.872,
-    "test_coverage_sd": 0.003,
+    "conformal_quantile": 0.05,
+    "r2": 0.982,
+    "r2_sd": 0.001,
+    "mae": 0.667,
+    "mae_sd": 0.019,
+    "baseline_mae": 5.802,
+    "baseline_mae_sd": 0.029,
+    "test_coverage": 0.862,
+    "test_coverage_sd": 0.023,
     "coverage_by_third": [
-      0.85,
-      0.88,
-      0.88
+      0.82,
+      0.86,
+      0.9
     ],
-    "interval_rel_width": 0.907,
+    "interval_rel_width": 0.202,
     "dropped_features": [
       "attack_bonus",
+      "role_solo",
       "role_elite",
       "role_minion"
     ],
-    "equation": "attack = 1.1\u00b7CR + 9.5  (solo -8.5)",
-    "interval_rule": "\u00b1 0.19\u00b7(result + 16)"
+    "equation": "attack = level + 5  (brute -1.3, artillery -1.4, soldier +1.2)",
+    "interval_rule": "\u00b1 0.05\u00b7(result + 16)",
+    "target_scale": "level",
+    "direct": {
+      "features": [
+        "cr_num",
+        "role_minion",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 16.0,
+      "n": 149,
+      "n_eval": 85,
+      "n_groups": 101,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 9.6,
+      "coef": [
+        1.1,
+        3.9,
+        -8.8
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.18,
+      "r2": 0.659,
+      "r2_sd": 0.01,
+      "mae": 3.192,
+      "mae_sd": 0.055,
+      "baseline_mae": 5.802,
+      "baseline_mae_sd": 0.029,
+      "test_coverage": 0.88,
+      "test_coverage_sd": 0.016,
+      "coverage_by_third": [
+        0.9,
+        0.83,
+        0.9
+      ],
+      "interval_rel_width": 0.836,
+      "dropped_features": [
+        "role_elite",
+        "attack_bonus"
+      ],
+      "equation": "attack = 1.1\u00b7CR + 9.6  (minion +3.9, solo -8.8)",
+      "interval_rule": "\u00b1 0.18\u00b7(result + 16)"
+    }
   },
   "5e_to_4e/damage_avg": {
     "direction": "5e_to_4e",
@@ -1141,8 +2233,11 @@
     "target_edition": "4e",
     "target": "damage_avg",
     "features": [
-      "cr_num",
-      "role_solo"
+      "level",
+      "role_elite",
+      "role_brute",
+      "role_soldier",
+      "role_artillery"
     ],
     "estimator": "explainable",
     "fit": "huber",
@@ -1152,39 +2247,93 @@
     "log_target": false,
     "log_features": [],
     "clip_min": 0.0,
-    "interval_offset": 12.0,
-    "n": 147,
-    "n_eval": 87,
-    "n_groups": 104,
+    "interval_offset": 11.0,
+    "n": 149,
+    "n_eval": 85,
+    "n_groups": 101,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 8.2,
+    "intercept": 5.1,
     "coef": [
-      0.83,
-      -3.3
+      0.48,
+      1.4,
+      2.1,
+      1.6,
+      -2.3
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.21,
-    "r2": 0.554,
-    "r2_sd": 0.015,
-    "mae": 3.518,
-    "mae_sd": 0.038,
-    "baseline_mae": 5.536,
-    "baseline_mae_sd": 0.056,
-    "test_coverage": 0.829,
-    "test_coverage_sd": 0.019,
+    "conformal_quantile": 0.14,
+    "r2": 0.712,
+    "r2_sd": 0.005,
+    "mae": 1.812,
+    "mae_sd": 0.02,
+    "baseline_mae": 3.466,
+    "baseline_mae_sd": 0.019,
+    "test_coverage": 0.849,
+    "test_coverage_sd": 0.02,
     "coverage_by_third": [
       0.83,
-      0.88,
-      0.78
+      0.77,
+      0.95
     ],
-    "interval_rel_width": 0.89,
+    "interval_rel_width": 0.687,
     "dropped_features": [
       "damage_avg",
-      "role_elite",
-      "role_minion"
+      "damage_per_round",
+      "role_minion",
+      "role_solo"
     ],
-    "equation": "damage = 0.83\u00b7CR + 8.2  (solo -3.3)",
-    "interval_rule": "\u00b1 0.21\u00b7(result + 12)"
+    "equation": "damage = 0.48\u00b7level + 5.1  (elite +1.4, brute +2.1, soldier +1.6, artillery -2.3)",
+    "interval_rule": "\u00b1 0.14\u00b7(result + 11)",
+    "target_scale": "level",
+    "direct": {
+      "features": [
+        "damage_per_round",
+        "cr_num",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 12.0,
+      "n": 133,
+      "n_eval": 72,
+      "n_groups": 87,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 7.5,
+      "coef": [
+        0.051,
+        0.43,
+        -5.7
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.19,
+      "r2": 0.524,
+      "r2_sd": 0.014,
+      "mae": 2.284,
+      "mae_sd": 0.046,
+      "baseline_mae": 3.547,
+      "baseline_mae_sd": 0.025,
+      "test_coverage": 0.892,
+      "test_coverage_sd": 0.012,
+      "coverage_by_third": [
+        0.9,
+        0.86,
+        0.92
+      ],
+      "interval_rel_width": 0.926,
+      "dropped_features": [
+        "damage_avg",
+        "role_elite",
+        "role_minion"
+      ],
+      "equation": "damage = 0.051\u00b7damage/round + 0.43\u00b7CR + 7.5  (solo -5.7)",
+      "interval_rule": "\u00b1 0.19\u00b7(result + 12)"
+    }
   },
   "5e_to_4e/ability_str": {
     "direction": "5e_to_4e",
@@ -1193,6 +2342,7 @@
     "target": "ability_str",
     "features": [
       "ability_str",
+      "level",
       "role_elite",
       "role_solo"
     ],
@@ -1209,34 +2359,83 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 6.1,
+    "intercept": 6.2,
     "coef": [
-      0.83,
-      -1.4,
-      -4.1
+      0.71,
+      0.19,
+      -1.7,
+      -3.9
     ],
     "alpha": 0.2,
     "conformal_quantile": 0.13,
-    "r2": 0.621,
-    "r2_sd": 0.009,
-    "mae": 2.776,
-    "mae_sd": 0.05,
+    "r2": 0.664,
+    "r2_sd": 0.012,
+    "mae": 2.69,
+    "mae_sd": 0.055,
     "baseline_mae": 4.529,
     "baseline_mae_sd": 0.028,
-    "test_coverage": 0.798,
-    "test_coverage_sd": 0.008,
+    "test_coverage": 0.808,
+    "test_coverage_sd": 0.021,
     "coverage_by_third": [
       0.69,
-      0.87,
-      0.83
+      0.89,
+      0.85
     ],
-    "interval_rel_width": 0.547,
+    "interval_rel_width": 0.539,
     "dropped_features": [
-      "cr_num",
       "role_minion"
     ],
-    "equation": "STR = 0.83\u00b7STR + 6.1  (elite -1.4, solo -4.1)",
-    "interval_rule": "\u00b1 0.13\u00b7(result + 19)"
+    "equation": "STR = 0.71\u00b7STR + 0.19\u00b7level + 6.2  (elite -1.7, solo -3.9)",
+    "interval_rule": "\u00b1 0.13\u00b7(result + 19)",
+    "target_scale": "level",
+    "direct": {
+      "features": [
+        "ability_str",
+        "role_elite",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 19.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 6.1,
+      "coef": [
+        0.83,
+        -1.4,
+        -4.1
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.13,
+      "r2": 0.621,
+      "r2_sd": 0.009,
+      "mae": 2.776,
+      "mae_sd": 0.05,
+      "baseline_mae": 4.529,
+      "baseline_mae_sd": 0.028,
+      "test_coverage": 0.798,
+      "test_coverage_sd": 0.008,
+      "coverage_by_third": [
+        0.69,
+        0.87,
+        0.83
+      ],
+      "interval_rel_width": 0.547,
+      "dropped_features": [
+        "cr_num",
+        "role_minion"
+      ],
+      "equation": "STR = 0.83\u00b7STR + 6.1  (elite -1.4, solo -4.1)",
+      "interval_rule": "\u00b1 0.13\u00b7(result + 19)"
+    }
   },
   "5e_to_4e/ability_dex": {
     "direction": "5e_to_4e",
@@ -1282,12 +2481,60 @@
     ],
     "interval_rel_width": 0.673,
     "dropped_features": [
-      "cr_num",
+      "level",
       "role_elite",
       "role_minion"
     ],
     "equation": "DEX = 0.7\u00b7DEX + 6.4  (solo +4.6)",
-    "interval_rule": "\u00b1 0.16\u00b7(result + 16)"
+    "interval_rule": "\u00b1 0.16\u00b7(result + 16)",
+    "target_scale": "level",
+    "direct": {
+      "features": [
+        "ability_dex",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 16.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 6.4,
+      "coef": [
+        0.7,
+        4.6
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.16,
+      "r2": 0.269,
+      "r2_sd": 0.037,
+      "mae": 2.745,
+      "mae_sd": 0.073,
+      "baseline_mae": 3.267,
+      "baseline_mae_sd": 0.027,
+      "test_coverage": 0.823,
+      "test_coverage_sd": 0.016,
+      "coverage_by_third": [
+        0.8,
+        0.91,
+        0.76
+      ],
+      "interval_rel_width": 0.673,
+      "dropped_features": [
+        "cr_num",
+        "role_elite",
+        "role_minion"
+      ],
+      "equation": "DEX = 0.7\u00b7DEX + 6.4  (solo +4.6)",
+      "interval_rule": "\u00b1 0.16\u00b7(result + 16)"
+    }
   },
   "5e_to_4e/ability_con": {
     "direction": "5e_to_4e",
@@ -1296,7 +2543,7 @@
     "target": "ability_con",
     "features": [
       "ability_con",
-      "role_solo"
+      "level"
     ],
     "estimator": "explainable",
     "fit": "huber",
@@ -1311,34 +2558,82 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 5.7,
+    "intercept": 8.9,
     "coef": [
-      0.77,
-      -1.7
+      0.37,
+      0.31
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.12,
-    "r2": 0.452,
-    "r2_sd": 0.009,
-    "mae": 2.566,
-    "mae_sd": 0.038,
+    "conformal_quantile": 0.1,
+    "r2": 0.527,
+    "r2_sd": 0.008,
+    "mae": 2.451,
+    "mae_sd": 0.027,
     "baseline_mae": 3.618,
     "baseline_mae_sd": 0.017,
-    "test_coverage": 0.815,
-    "test_coverage_sd": 0.013,
+    "test_coverage": 0.787,
+    "test_coverage_sd": 0.017,
     "coverage_by_third": [
-      0.76,
-      0.89,
-      0.79
+      0.8,
+      0.77,
+      0.8
     ],
-    "interval_rel_width": 0.502,
+    "interval_rel_width": 0.422,
     "dropped_features": [
       "role_elite",
-      "cr_num",
+      "role_solo",
       "role_minion"
     ],
-    "equation": "CON = 0.77\u00b7CON + 5.7  (solo -1.7)",
-    "interval_rule": "\u00b1 0.12\u00b7(result + 18)"
+    "equation": "CON = 0.37\u00b7CON + 0.31\u00b7level + 8.9",
+    "interval_rule": "\u00b1 0.1\u00b7(result + 18)",
+    "target_scale": "level",
+    "direct": {
+      "features": [
+        "ability_con",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 18.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 5.7,
+      "coef": [
+        0.77,
+        -1.7
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.12,
+      "r2": 0.452,
+      "r2_sd": 0.009,
+      "mae": 2.566,
+      "mae_sd": 0.038,
+      "baseline_mae": 3.618,
+      "baseline_mae_sd": 0.017,
+      "test_coverage": 0.815,
+      "test_coverage_sd": 0.013,
+      "coverage_by_third": [
+        0.76,
+        0.89,
+        0.79
+      ],
+      "interval_rel_width": 0.502,
+      "dropped_features": [
+        "role_elite",
+        "cr_num",
+        "role_minion"
+      ],
+      "equation": "CON = 0.77\u00b7CON + 5.7  (solo -1.7)",
+      "interval_rule": "\u00b1 0.12\u00b7(result + 18)"
+    }
   },
   "5e_to_4e/ability_int": {
     "direction": "5e_to_4e",
@@ -1383,12 +2678,59 @@
     "interval_rel_width": 1.251,
     "dropped_features": [
       "role_solo",
-      "cr_num",
+      "level",
       "role_elite",
       "role_minion"
     ],
     "equation": "INT = 0.96\u00b7INT + 0.1",
-    "interval_rule": "\u00b1 0.2\u00b7(result + 10)"
+    "interval_rule": "\u00b1 0.2\u00b7(result + 10)",
+    "target_scale": "level",
+    "direct": {
+      "features": [
+        "ability_int"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 10.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 0.1,
+      "coef": [
+        0.96
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.2,
+      "r2": 0.735,
+      "r2_sd": 0.006,
+      "mae": 2.371,
+      "mae_sd": 0.036,
+      "baseline_mae": 4.858,
+      "baseline_mae_sd": 0.028,
+      "test_coverage": 0.797,
+      "test_coverage_sd": 0.013,
+      "coverage_by_third": [
+        0.85,
+        0.67,
+        0.87
+      ],
+      "interval_rel_width": 1.251,
+      "dropped_features": [
+        "role_solo",
+        "cr_num",
+        "role_elite",
+        "role_minion"
+      ],
+      "equation": "INT = 0.96\u00b7INT + 0.1",
+      "interval_rule": "\u00b1 0.2\u00b7(result + 10)"
+    }
   },
   "5e_to_4e/ability_wis": {
     "direction": "5e_to_4e",
@@ -1397,7 +2739,7 @@
     "target": "ability_wis",
     "features": [
       "ability_wis",
-      "cr_num"
+      "level"
     ],
     "estimator": "explainable",
     "fit": "huber",
@@ -1412,34 +2754,82 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 9.6,
+    "intercept": 9.0,
     "coef": [
-      0.33,
-      0.13
+      0.28,
+      0.18
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.14,
-    "r2": 0.215,
-    "r2_sd": 0.02,
-    "mae": 2.2,
-    "mae_sd": 0.034,
+    "conformal_quantile": 0.12,
+    "r2": 0.285,
+    "r2_sd": 0.008,
+    "mae": 2.072,
+    "mae_sd": 0.014,
     "baseline_mae": 2.559,
     "baseline_mae_sd": 0.017,
-    "test_coverage": 0.833,
-    "test_coverage_sd": 0.017,
+    "test_coverage": 0.834,
+    "test_coverage_sd": 0.016,
     "coverage_by_third": [
-      0.82,
       0.84,
+      0.82,
       0.84
     ],
-    "interval_rel_width": 0.555,
+    "interval_rel_width": 0.52,
     "dropped_features": [
       "role_elite",
       "role_solo",
       "role_minion"
     ],
-    "equation": "WIS = 0.33\u00b7WIS + 0.13\u00b7CR + 9.6",
-    "interval_rule": "\u00b1 0.14\u00b7(result + 14)"
+    "equation": "WIS = 0.28\u00b7WIS + 0.18\u00b7level + 9",
+    "interval_rule": "\u00b1 0.12\u00b7(result + 14)",
+    "target_scale": "level",
+    "direct": {
+      "features": [
+        "ability_wis",
+        "cr_num"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 14.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 9.6,
+      "coef": [
+        0.33,
+        0.13
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.14,
+      "r2": 0.215,
+      "r2_sd": 0.02,
+      "mae": 2.2,
+      "mae_sd": 0.034,
+      "baseline_mae": 2.559,
+      "baseline_mae_sd": 0.017,
+      "test_coverage": 0.833,
+      "test_coverage_sd": 0.017,
+      "coverage_by_third": [
+        0.82,
+        0.84,
+        0.84
+      ],
+      "interval_rel_width": 0.555,
+      "dropped_features": [
+        "role_elite",
+        "role_solo",
+        "role_minion"
+      ],
+      "equation": "WIS = 0.33\u00b7WIS + 0.13\u00b7CR + 9.6",
+      "interval_rule": "\u00b1 0.14\u00b7(result + 14)"
+    }
   },
   "5e_to_4e/ability_cha": {
     "direction": "5e_to_4e",
@@ -1448,6 +2838,8 @@
     "target": "ability_cha",
     "features": [
       "ability_cha",
+      "level",
+      "role_elite",
       "role_solo"
     ],
     "estimator": "explainable",
@@ -1463,33 +2855,81 @@
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 3.5,
+    "intercept": 3.0,
     "coef": [
-      0.91,
-      -4.1
+      0.8,
+      0.17,
+      -1.1,
+      -4.7
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.19,
-    "r2": 0.47,
-    "r2_sd": 0.018,
-    "mae": 2.933,
-    "mae_sd": 0.049,
+    "conformal_quantile": 0.2,
+    "r2": 0.481,
+    "r2_sd": 0.021,
+    "mae": 2.871,
+    "mae_sd": 0.069,
     "baseline_mae": 4.189,
     "baseline_mae_sd": 0.022,
-    "test_coverage": 0.808,
-    "test_coverage_sd": 0.015,
+    "test_coverage": 0.824,
+    "test_coverage_sd": 0.022,
     "coverage_by_third": [
-      0.76,
-      0.78,
-      0.88
+      0.82,
+      0.79,
+      0.86
     ],
-    "interval_rel_width": 0.935,
+    "interval_rel_width": 0.982,
     "dropped_features": [
-      "cr_num",
-      "role_elite",
       "role_minion"
     ],
-    "equation": "CHA = 0.91\u00b7CHA + 3.5  (solo -4.1)",
-    "interval_rule": "\u00b1 0.19\u00b7(result + 13)"
+    "equation": "CHA = 0.8\u00b7CHA + 0.17\u00b7level + 3  (elite -1.1, solo -4.7)",
+    "interval_rule": "\u00b1 0.2\u00b7(result + 13)",
+    "target_scale": "level",
+    "direct": {
+      "features": [
+        "ability_cha",
+        "role_solo"
+      ],
+      "estimator": "explainable",
+      "fit": "huber",
+      "interval": "scaled",
+      "round_sig": 2,
+      "related_weight": 0.5,
+      "log_target": false,
+      "log_features": [],
+      "clip_min": 0.0,
+      "interval_offset": 13.0,
+      "n": 154,
+      "n_eval": 87,
+      "n_groups": 104,
+      "cv": "grouped 5-fold x10, scored on same-creature pairs",
+      "intercept": 3.5,
+      "coef": [
+        0.91,
+        -4.1
+      ],
+      "alpha": 0.2,
+      "conformal_quantile": 0.19,
+      "r2": 0.47,
+      "r2_sd": 0.018,
+      "mae": 2.933,
+      "mae_sd": 0.049,
+      "baseline_mae": 4.189,
+      "baseline_mae_sd": 0.022,
+      "test_coverage": 0.808,
+      "test_coverage_sd": 0.015,
+      "coverage_by_third": [
+        0.76,
+        0.78,
+        0.88
+      ],
+      "interval_rel_width": 0.935,
+      "dropped_features": [
+        "cr_num",
+        "role_elite",
+        "role_minion"
+      ],
+      "equation": "CHA = 0.91\u00b7CHA + 3.5  (solo -4.1)",
+      "interval_rule": "\u00b1 0.19\u00b7(result + 13)"
+    }
   }
 }

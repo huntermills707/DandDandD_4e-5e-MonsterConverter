@@ -36,16 +36,28 @@ N_REPEATS = 10
 MIN_N = 15
 ADD_TOL = 0.03  # a role/interaction term must cut CV error by 3% to enter
 
-# Each spec: direction, target field on the target side, and source features:
-# the target's counterpart stat(s) in the other edition plus the level/CR
-# scale (4e builds half its level into attacks and defenses). Simpler specs
-# with more features fit no better under grouped CV (models/experiments.py).
-SCALE = {"4e_to_5e": "level", "5e_to_4e": "cr_num"}
+# Each spec: direction, target field on the target side, and features: the
+# target's counterpart stat(s) in the other edition plus the TARGET edition's
+# scale (5e CR for 4e -> 5e, 4e level for 5e -> 4e). The scale rule itself
+# (CR from level, level from CR) uses the source scale. Rules on the target
+# scale are a GM's own monster math ("4e AC ~ level + 14"): the GM picks the
+# level/CR, or the scale rule converts it (two-stage). With the true target
+# level, 5e -> 4e AC/defense/attack error halves; with the converted one it
+# matches rules on the source scale (models/experiments.py --two-stage).
+# Simpler specs with more features fit no better under grouped CV.
+SCALE = {"4e_to_5e": "level", "5e_to_4e": "cr_num"}          # source-side scale
+TARGET_SCALE = {"4e_to_5e": "cr_num", "5e_to_4e": "level"}   # target-side scale
+OTHER_EDITION = {"4e": "5e", "5e": "4e"}
+TARGET_SCALE_OF = {"4e": "cr_num", "5e": "level"}  # source edition -> target scale
 ABILITIES = ("str", "dex", "con", "int", "wis", "cha")
 COUNTERPART = {
     "4e_to_5e": {
         "cr_num": [], "hp": ["hp"], "ac": ["ac"], "attack_bonus": ["attack_bonus"],
+        # 5e damage: best single attack (riders included) and the Multiattack
+        # routine per round; 4e damage is the basic attack, and a 4e
+        # "makes two attacks" power suggests a 5e Multiattack
         "damage_avg": ["damage_avg"],
+        "damage_per_round": ["damage_avg", "attacks_per_round"],
         **{f"ability_{a}": [f"ability_{a}"] for a in ABILITIES},
         # 5e lists only proficient saves: modifier + proficiency
         **{f"save_{a}": [f"ability_{a}"] for a in ("dex", "con", "wis", "cha")},
@@ -55,14 +67,26 @@ COUNTERPART = {
         # 4e defenses use the better of two abilities
         "fort": ["ability_str", "ability_con"], "ref": ["ability_dex"],
         "will": ["ability_wis", "ability_cha"],
-        "attack_bonus": ["attack_bonus"], "damage_avg": ["damage_avg"],
+        "attack_bonus": ["attack_bonus"],
+        # 4e basic attack damage from 5e per-attack and per-round damage
+        "damage_avg": ["damage_avg", "damage_per_round"],
         **{f"ability_{a}": [f"ability_{a}"] for a in ABILITIES},
     },
 }
 MODEL_SPECS = [
-    {"direction": d, "target": t, "features": feats + [SCALE[d]]}
+    {"direction": d, "target": t,
+     "features": feats + [SCALE[d] if t == TARGET_SCALE[d] else TARGET_SCALE[d]]}
     for d, targets in COUNTERPART.items() for t, feats in targets.items()
 ]
+
+
+def direct_spec(spec):
+    """The same rule on the source scale (5e CR for 5e -> 4e): used when the
+    GM leaves the target level/CR to be converted. Rules on a converted
+    level/CR do no better, and on the 5e saves worse (selection, scored with
+    the true CR, drops the 4e ability), so both rules are kept."""
+    d = spec["direction"]
+    return dict(spec, features=COUNTERPART[d][spec["target"]] + [SCALE[d]])
 
 
 ROLE_TIERS = ("minion", "elite", "solo")  # 4e role tiers; "standard" is the reference
@@ -228,14 +252,26 @@ DEFAULT_DESIGN = LinearDesign("explainable", fit="huber", interval="scaled", rou
 
 # Role interactions offered to the backward selection, by (direction, target).
 # A slope replaces its tier's flat bonus. 4e multiplies solo HP by 4, so the
-# solo bonus on 4e HP is proportional to level: a slope on CR, zero at CR 0.
-# (Slope plus flat bonus fits a little better but goes negative below CR 5,
-# outside the data's solos, CR 6-30.) An elite slope was never selected; 4e's
+# solo bonus on 4e HP is proportional to level: a slope on 4e level, zero at
+# level 0. (On the CR scale, slope plus flat bonus fit a little better but
+# went negative below CR 5, outside the data's solos.) An elite slope was never selected; 4e's
 # other role adjustments are flat (+2 to defenses and so on), and neither
 # tier slopes elsewhere nor combat roles (brute, lurker, ...) improved
 # held-out error (models/experiments.py --interactions), so they are not
 # offered.
-INTERACTIONS = {("5e_to_4e", "hp"): ["role_solo*cr_num"]}
+INTERACTIONS = {("5e_to_4e", "hp"): ["role_solo*{scale}"]}  # the rule's level/CR
+
+# 4e combat roles (artillery, brute, controller, lurker, soldier vs.
+# skirmisher) are offered to a rule's forward step (entering only if they cut
+# CV error by 3%) where 4e's own role math applies: the stats the 4e DMG
+# adjusts by role (HP, AC, defenses, attack, damage), converting TO 4e, on
+# the target level, where the role is the GM's choice for the converted
+# monster. Nested CV (models/experiments.py --combat): AC -28%, attack -20%,
+# HP and Ref -8%, damage -4% (brute and soldier enter in nearly every fold).
+# Offered to 4e -> 5e rules or the direct rules, they mostly chased noise
+# (4e -> 5e saves 2-8% worse), so they are not offered there.
+COMBAT_FORWARD = {("5e_to_4e", t) for t in
+                  ("hp", "ac", "fort", "ref", "will", "attack_bonus", "damage_avg")}
 
 # Stats 4e fixes by role tier rather than scale: every minion has 1 HP. Those
 # pairs are left out of the rule's fit, and the rule returns the fixed value.
@@ -259,15 +295,17 @@ def candidate_features(spec, role_features=ROLE_FEATURES):
     by a slope), and interactions."""
     key = (spec["direction"], spec["target"])
     fixed = FIXED_BY_ROLE.get(key, {})
-    slopes = INTERACTIONS.get(key, [])
+    scale = next(f for f in spec["features"] if f in ("level", "cr_num"))
+    slopes = [f.format(scale=scale) for f in INTERACTIONS.get(key, [])]
     sloped = {f.split("*")[0] for f in slopes}
     return (spec["features"]
             + [f for f in role_features if f[5:] not in fixed and f not in sloped] + slopes)
 
 
 def feature_value(pair, source_prefix, feature):
-    """Source-side stat, a 4e role indicator ("role_elite", "role_brute",
-    "role_leader"), or a product of two of those ("role_solo*level"). Role
+    """Source-side stat, the target edition's level/CR, a 4e role indicator
+    ("role_elite", "role_brute", "role_leader"), or a product of two of
+    those ("role_solo*level"). Role
     comes from the 4e side in both directions: for 5e -> 4e it is the role
     the converted monster should have."""
     if "*" in feature:
@@ -275,6 +313,9 @@ def feature_value(pair, source_prefix, feature):
         return None if a is None or b is None else a * b
     if feature.startswith("role_"):
         return float(feature[5:] in role_flags(pair["4e"].get("role")))
+    if feature == TARGET_SCALE_OF[source_prefix]:
+        # the target edition's level/CR: chosen by the GM, or converted
+        return pair[OTHER_EDITION[source_prefix]].get(feature)
     return pair[source_prefix].get(feature)
 
 
@@ -323,6 +364,22 @@ def oof_predictions(X, y, groups, make_model, n_folds, seed, is_same=None):
     return pred
 
 
+def _score(per, y, pred, base, lo, hi, m):
+    """Append one repeat's metrics (same-creature rows m) to per."""
+    yt, pt = y[m], pred[m]
+    ss_tot = ((yt - yt.mean()) ** 2).sum()
+    per["r2"].append(1 - ((yt - pt) ** 2).sum() / ss_tot if ss_tot else np.nan)
+    per["mae"].append(np.abs(yt - pt).mean())
+    per["baseline_mae"].append(np.abs(yt - base[m]).mean())
+    covered = (yt >= lo[m]) & (yt <= hi[m])
+    per["coverage"].append(covered.mean())
+    # conditional coverage by thirds of the prediction
+    band = np.digitize(pt, np.quantile(pt, [1 / 3, 2 / 3]))
+    for b, name in enumerate(("cov_low", "cov_mid", "cov_high")):
+        per[name].append(covered[band == b].mean() if (band == b).any() else np.nan)
+    per["rel_width"].append(np.mean((hi[m] - lo[m]) / np.maximum(np.abs(yt), 1e-6)))
+
+
 def cross_validate(X, y, groups, is_same, make_model, alpha=ALPHA,
                    n_folds=N_FOLDS, n_repeats=N_REPEATS):
     """Repeated grouped CV. Returns per-repeat metric arrays and the
@@ -333,10 +390,7 @@ def cross_validate(X, y, groups, is_same, make_model, alpha=ALPHA,
     oof_preds = []
     for rep in range(n_repeats):
         seed = 1000 + rep
-        pred = np.empty_like(y)
-        base = np.empty_like(y)
-        lo = np.empty_like(y)
-        hi = np.empty_like(y)
+        pred, base, lo, hi = (np.empty_like(y) for _ in range(4))
         for f, test in enumerate(grouped_folds(groups, n_folds, seed)):
             train = np.setdiff1d(np.arange(len(y)), test)
             model = make_model().fit(X[train], y[train], is_same[train])
@@ -348,20 +402,7 @@ def cross_validate(X, y, groups, is_same, make_model, alpha=ALPHA,
             q = conformal_q(model.residual(y[train], inner), alpha)
             lo[test], hi[test] = model.bounds(pred[test], q)
         oof_preds.append(pred)
-
-        m = is_same
-        yt, pt = y[m], pred[m]
-        ss_tot = ((yt - yt.mean()) ** 2).sum()
-        per["r2"].append(1 - ((yt - pt) ** 2).sum() / ss_tot if ss_tot else np.nan)
-        per["mae"].append(np.abs(yt - pt).mean())
-        per["baseline_mae"].append(np.abs(yt - base[m]).mean())
-        covered = (yt >= lo[m]) & (yt <= hi[m])
-        per["coverage"].append(covered.mean())
-        # conditional coverage by thirds of the prediction
-        band = np.digitize(pt, np.quantile(pt, [1 / 3, 2 / 3]))
-        for b, name in enumerate(("cov_low", "cov_mid", "cov_high")):
-            per[name].append(covered[band == b].mean() if (band == b).any() else np.nan)
-        per["rel_width"].append(np.mean((hi[m] - lo[m]) / np.maximum(np.abs(yt), 1e-6)))
+        _score(per, y, pred, base, lo, hi, is_same)
     return {k: np.array(v) for k, v in per.items()}, np.array(oof_preds)
 
 
@@ -385,9 +426,8 @@ def select_features(pairs, spec, make_model, counterparts, extras=(), tol=0.01,
     2. Then, repeatedly, the term whose removal raises CV error least is
        dropped while that rise stays under `tol` (1%).
     3. Then, repeatedly, the candidate in `extras` that lowers CV error most
-       is added while it lowers it by more than `tol_add`. Unused by the
-       shipped rules (no forward candidates earned a place under nested CV;
-       models/experiments.py --interactions).
+       is added while it lowers it by more than `tol_add` (4e combat roles,
+       for the rules in COMBAT_FORWARD).
     Returns (kept features, dropped features).
     """
     src, tgt = source_target(spec)
@@ -481,7 +521,8 @@ def fit_spec(pairs, spec, make_model=NonNegLinear, alpha=ALPHA,
 
 LABELS = {
     "cr_num": "CR", "level": "level", "hp": "HP", "ac": "AC", "attack_bonus": "attack",
-    "damage_avg": "damage", "fort": "Fort", "ref": "Ref", "will": "Will",
+    "damage_avg": "damage", "damage_per_round": "damage/round",
+    "attacks_per_round": "attacks/round", "fort": "Fort", "ref": "Ref", "will": "Will",
     **{f"ability_{a}": a.upper() for a in ABILITIES},
     **{f"save_{a}": f"{a.upper()} save" for a in ABILITIES},
 }
@@ -556,49 +597,92 @@ def write_rules(models, path):
         "cross-validation. *Error* is the typical miss relative to always",
         "guessing the average (lower is better).",
         "",
+        "**Pick the target level/CR, then convert.** In each direction the first",
+        "rule converts the level/CR; choose it yourself if you prefer. The main",
+        "table's rules use that *target* level/CR (5e CR in 4e → 5e, 4e level in",
+        "5e → 4e), the way each edition's own monster math does. If you'd rather",
+        "not settle a level/CR, use the *direct* rules underneath, which work",
+        "from the source monster's own level/CR.",
+        "",
+        "Damage: 4e damage is the basic attack's average; 5e damage is the best",
+        "single attack with riders (\"plus 7 (2d6) fire\"), and damage/round",
+        "the whole Multiattack routine.",
+        "",
     ]
+
+    def row(m, target):
+        rule = m["equation"].split(" = ", 1)[1]
+        return (f"| {short_label(target)} | {rule} | {interval_string(m)} | "
+                f"{m['mae'] / m['baseline_mae']:.0%} | {m['r2']:.2f} |")
+
+    head = ["| Stat | Rule | 80% range | Error | R² |", "|---|---|---|---|---|"]
     for direction, title in (("4e_to_5e", "4e → 5e"), ("5e_to_4e", "5e → 4e")):
-        lines += [f"## {title}", "", "| Stat | Rule | 80% range | Error | R² |",
-                  "|---|---|---|---|---|"]
-        for m in models.values():
-            if m["direction"] != direction:
-                continue
-            rule = m["equation"].split(" = ", 1)[1]
-            lines.append(f"| {short_label(m['target'])} | {rule} | {interval_string(m)} | "
-                         f"{m['mae'] / m['baseline_mae']:.0%} | {m['r2']:.2f} |")
+        scale = "CR" if TARGET_SCALE[direction] == "cr_num" else "level"
+        ms = [m for m in models.values() if m["direction"] == direction]
+        lines += [f"## {title}", "", f"With the target {scale} given:", "", *head]
+        lines += [row(m, m["target"]) for m in ms]
+        lines += ["", f"Direct, without settling the target {scale}:", "", *head]
+        lines += [row(m["direct"], m["target"]) for m in ms if "direct" in m]
         lines.append("")
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def fit_rule(pairs, spec, make_model, extra_features, select, direct=False):
+    """Candidate terms -> selection -> fit. Returns the result or None."""
+    key = (spec["direction"], spec["target"])
+    counterparts = COUNTERPART[spec["direction"]][spec["target"]]
+    spec = dict(spec, features=candidate_features(spec, list(extra_features)))
+    fit_pairs = rule_pairs(pairs, spec)
+    dropped = []
+    combat = ([f"role_{r}" for r in COMBAT_ROLES]
+              if key in COMBAT_FORWARD and not direct else [])
+    if select:
+        kept, dropped = select_features(fit_pairs, spec, make_model, counterparts,
+                                        extras=combat)
+        spec = dict(spec, features=kept)
+    result = fit_spec(fit_pairs, spec, make_model)
+    if result is None:
+        return None
+    result["dropped_features"] = dropped
+    fixed = FIXED_BY_ROLE.get((spec["direction"], spec["target"]))
+    if fixed:
+        result["fixed_by_role"] = fixed
+    result["equation"] = equation_string(result)
+    result["interval_rule"] = interval_string(result)
+    return result
+
+
 def fit_all(pairs, make_model=DEFAULT_DESIGN, extra_features=ROLE_FEATURES, select=True,
             verbose=True):
+    """Every rule. A rule on the target edition's level/CR carries, under
+    "direct", the same stat's rule on the source scale, for when the GM
+    leaves the level/CR to be converted."""
     models = {}
     for spec in MODEL_SPECS:
         key = f"{spec['direction']}/{spec['target']}"
-        counterparts = COUNTERPART[spec["direction"]][spec["target"]]
-        spec = dict(spec, features=candidate_features(spec, list(extra_features)))
-        fit_pairs = rule_pairs(pairs, spec)
-        dropped = []
-        if select:
-            kept, dropped = select_features(fit_pairs, spec, make_model, counterparts)
-            spec = dict(spec, features=kept)
-        result = fit_spec(fit_pairs, spec, make_model)
-        if result is not None:
-            result["dropped_features"] = dropped
-            fixed = FIXED_BY_ROLE.get((spec["direction"], spec["target"]))
-            if fixed:
-                result["fixed_by_role"] = fixed
+        result = fit_rule(pairs, spec, make_model, extra_features, select)
         if result is None:
             if verbose:
                 print(f"  skipping {key}: not enough data")
             continue
-        result["equation"] = equation_string(result)
-        result["interval_rule"] = interval_string(result)
+        if spec["target"] != TARGET_SCALE[spec["direction"]]:
+            result["target_scale"] = TARGET_SCALE[spec["direction"]]
+            direct = fit_rule(pairs, direct_spec(spec), make_model, extra_features, select,
+                              direct=True)
+            if direct is not None:
+                result["direct"] = {k: v for k, v in direct.items()
+                                    if k not in ("direction", "source_edition",
+                                                 "target_edition", "target")}
         models[key] = result
         if verbose:
-            print(f"{key:26s} R²={result['r2']:6.2f}±{result['r2_sd']:.2f}  "
-                  f"MAE={result['mae']:7.2f} (base {result['baseline_mae']:7.2f})  "
-                  f"cov={result['test_coverage']:.2f}")
+            line = (f"{key:26s} R²={result['r2']:6.2f}±{result['r2_sd']:.2f}  "
+                    f"MAE={result['mae']:7.2f} (base {result['baseline_mae']:7.2f})  "
+                    f"cov={result['test_coverage']:.2f}")
+            if "direct" in result:
+                dr = result["direct"]
+                line += (f"  | direct: R²={dr['r2']:5.2f} MAE={dr['mae']:7.2f} "
+                         f"cov={dr['test_coverage']:.2f}")
+            print(line)
     return models
 
 

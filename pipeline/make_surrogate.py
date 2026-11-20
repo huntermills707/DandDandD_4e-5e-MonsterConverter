@@ -32,8 +32,8 @@ SAVES = [f"save_{a}" for a in ("str", "dex", "con", "int", "wis", "cha")]
 # because it drives 4e HP/damage math.
 KEEP = {
     "4e": ["level", "role", "xp", "hp", "ac", "fort", "ref", "will",
-           "attack_bonus", "damage_avg", *ABILITIES],
-    "5e": ["cr_num", "xp", "hp", "ac", "attack_bonus", "damage_avg",
+           "attack_bonus", "damage_avg", "damage_max", "attacks_per_round", *ABILITIES],
+    "5e": ["cr_num", "xp", "hp", "ac", "attack_bonus", "damage_avg", "damage_per_round",
            *ABILITIES, *SAVES],
 }
 

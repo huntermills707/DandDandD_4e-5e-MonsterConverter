@@ -7,15 +7,49 @@ interval the true value fell in about 80% of the time under grouped
 cross-validation. *Error* is the typical miss relative to always
 guessing the average (lower is better).
 
+**Pick the target level/CR, then convert.** In each direction the first
+rule converts the level/CR; choose it yourself if you prefer. The main
+table's rules use that *target* level/CR (5e CR in 4e → 5e, 4e level in
+5e → 4e), the way each edition's own monster math does. If you'd rather
+not settle a level/CR, use the *direct* rules underneath, which work
+from the source monster's own level/CR.
+
+Damage: 4e damage is the basic attack's average; 5e damage is the best
+single attack with riders ("plus 7 (2d6) fire"), and damage/round
+the whole Multiattack routine.
+
 ## 4e → 5e
+
+With the target CR given:
 
 | Stat | Rule | 80% range | Error | R² |
 |---|---|---|---|---|
 | CR | 0.56·level - 1.3  (solo +8.7) | ± 0.35·(result + 5) | 41% | 0.78 |
+| HP | 0.088·HP + 11·CR + 9.4  (solo +20) | ± 0.19·(result + 76) | 34% | 0.86 |
+| AC | 0.34·CR + 12.6  (solo +1.6) | ± 0.08·(result + 15) | 51% | 0.67 |
+| attack | 0.062·attack + 0.41·CR + 3.2  (solo +1.4) | ± 0.12·(result + 6) | 33% | 0.88 |
+| damage | CR + 8 | ± 0.23·(result + 13) | 58% | 0.51 |
+| damage/round | 5.9·attacks/round + 2.5·CR + 2.1 | ± 0.3·(result + 20) | 57% | 0.45 |
+| STR | 0.71·STR + 2.2  (elite +1.9, solo +6.3) | ± 0.14·(result + 17) | 49% | 0.74 |
+| DEX | 0.31·DEX + 8.2  (solo -3.1) | ± 0.14·(result + 13) | 78% | 0.27 |
+| CON | 0.28·CON + 0.4·CR + 8.4  (solo +1.8) | ± 0.1·(result + 16) | 44% | 0.77 |
+| INT | 0.76·INT + 2.2 | ± 0.16·(result + 10) | 50% | 0.73 |
+| WIS | 0.21·WIS + 0.2·CR + 8 | ± 0.14·(result + 12) | 81% | 0.27 |
+| CHA | 0.48·CHA + 0.35·CR + 2.6 | ± 0.17·(result + 11) | 58% | 0.61 |
+| DEX save | 0.17·DEX + 0.15·CR + 1.4  (solo -1.1) | ± 0.19·(result + 6) | 72% | 0.21 |
+| CON save | 0.16·CON + 0.35·CR + 0.7  (solo +1.7) | ± 0.13·(result + 8) | 54% | 0.41 |
+| WIS save | 0.38·CR + 2.1  (solo -1.1) | ± 0.14·(result + 6) | 51% | 0.47 |
+| CHA save | 0.43·CR + 2.3  (solo -0.71) | ± 0.12·(result + 7.5) | 53% | 0.53 |
+
+Direct, without settling the target CR:
+
+| Stat | Rule | 80% range | Error | R² |
+|---|---|---|---|---|
 | HP | 0.16·HP + 5.6·level - 7.1  (solo +84) | ± 0.27·(result + 76) | 37% | 0.86 |
 | AC | 0.21·AC + 9.1  (solo +4.1) | ± 0.1·(result + 15) | 54% | 0.64 |
-| attack | 0.25·level + 3.2  (solo +5.8) | ± 0.2·(result + 6) | 48% | 0.76 |
-| damage | 11  (solo +5.8) | ± 0.28·(result + 11) | 83% | 0.03 |
+| attack | 0.29·level + 2.8  (elite +1, solo +5.3) | ± 0.18·(result + 6) | 47% | 0.78 |
+| damage | 0.6·level + 6  (solo +10) | ± 0.26·(result + 13) | 59% | 0.49 |
+| damage/round | 6.5·attacks/round + 1.4·level - 2.3  (solo +27) | ± 0.33·(result + 20) | 60% | 0.46 |
 | STR | 0.71·STR + 2.2  (elite +1.9, solo +6.3) | ± 0.14·(result + 17) | 49% | 0.74 |
 | DEX | 0.37·DEX - 0.13·level + 8.7  (solo -2.6) | ± 0.13·(result + 13) | 74% | 0.27 |
 | CON | 0.24·CON + 0.24·level + 8.3  (elite +0.99, solo +5.6) | ± 0.11·(result + 16) | 49% | 0.74 |
@@ -29,16 +63,36 @@ guessing the average (lower is better).
 
 ## 5e → 4e
 
+With the target level given:
+
 | Stat | Rule | 80% range | Error | R² |
 |---|---|---|---|---|
 | level | 1.1·CR + 4.9  (solo -8.5) | ± 0.24·(result + 12) | 52% | 0.68 |
+| HP | 9·level + 13  (elite +130, solo +37·level, brute +24; minion = 1) | ± 0.1·(result + 140) | 10% | 0.99 |
+| AC | 0.067·AC + 0.96·level + 13.4  (elite +1.7, solo +2.2, brute -1.9, soldier +1.7) | ± 0.03·(result + 26) | 14% | 0.98 |
+| Fort | 0.23·STR + 0.99·level + 9.5 | ± 0.06·(result + 25) | 25% | 0.94 |
+| Ref | 0.24·DEX + 0.96·level + 8.9  (solo +3.3, brute -1.9) | ± 0.06·(result + 23) | 24% | 0.94 |
+| Will | 0.22·CHA + 0.92·level + 9.1  (elite +1.7, solo +1.2) | ± 0.06·(result + 23) | 25% | 0.93 |
+| attack | level + 5  (brute -1.3, artillery -1.4, soldier +1.2) | ± 0.05·(result + 16) | 11% | 0.98 |
+| damage | 0.48·level + 5.1  (elite +1.4, brute +2.1, soldier +1.6, artillery -2.3) | ± 0.14·(result + 11) | 52% | 0.71 |
+| STR | 0.71·STR + 0.19·level + 6.2  (elite -1.7, solo -3.9) | ± 0.13·(result + 19) | 59% | 0.66 |
+| DEX | 0.7·DEX + 6.4  (solo +4.6) | ± 0.16·(result + 16) | 84% | 0.27 |
+| CON | 0.37·CON + 0.31·level + 8.9 | ± 0.1·(result + 18) | 68% | 0.53 |
+| INT | 0.96·INT + 0.1 | ± 0.2·(result + 10) | 49% | 0.73 |
+| WIS | 0.28·WIS + 0.18·level + 9 | ± 0.12·(result + 14) | 81% | 0.28 |
+| CHA | 0.8·CHA + 0.17·level + 3  (elite -1.1, solo -4.7) | ± 0.2·(result + 13) | 69% | 0.48 |
+
+Direct, without settling the target level:
+
+| Stat | Rule | 80% range | Error | R² |
+|---|---|---|---|---|
 | HP | 0.87·HP + 39  (elite +140, solo +26·CR; minion = 1) | ± 0.23·(result + 140) | 26% | 0.93 |
 | AC | 0.33·AC + 0.97·CR + 14.5  (minion +3.4, elite +1.6, solo -6.2) | ± 0.12·(result + 26) | 53% | 0.68 |
 | Fort | 0.36·STR + 0.49·CON + 0.74·CR + 6.6  (solo -7.6) | ± 0.12·(result + 25) | 52% | 0.73 |
 | Ref | 1.1·CR + 16.1  (solo -5.2) | ± 0.13·(result + 23) | 53% | 0.70 |
 | Will | 0.34·CHA + 0.93·CR + 13.1  (solo -6.9) | ± 0.14·(result + 23) | 54% | 0.68 |
-| attack | 1.1·CR + 9.5  (solo -8.5) | ± 0.19·(result + 16) | 57% | 0.64 |
-| damage | 0.83·CR + 8.2  (solo -3.3) | ± 0.21·(result + 12) | 64% | 0.55 |
+| attack | 1.1·CR + 9.6  (minion +3.9, solo -8.8) | ± 0.18·(result + 16) | 55% | 0.66 |
+| damage | 0.051·damage/round + 0.43·CR + 7.5  (solo -5.7) | ± 0.19·(result + 12) | 64% | 0.52 |
 | STR | 0.83·STR + 6.1  (elite -1.4, solo -4.1) | ± 0.13·(result + 19) | 61% | 0.62 |
 | DEX | 0.7·DEX + 6.4  (solo +4.6) | ± 0.16·(result + 16) | 84% | 0.27 |
 | CON | 0.77·CON + 5.7  (solo -1.7) | ± 0.12·(result + 18) | 71% | 0.45 |

@@ -33,9 +33,16 @@ DIRECTION_LABELS = {
     "5e_to_4e": "5e → 4e",
 }
 
+# The target edition's scale. Rules other than the scale rule itself are
+# stated on it (5e CR, 4e level) when the GM types the level/CR they want;
+# left blank, the scale rule converts it for display and every other stat
+# comes from its "direct" rule on the source monster's own level/CR.
+TARGET_SCALE = {"4e_to_5e": "cr_num", "5e_to_4e": "level"}
+
 # Display grouping for the field grids: (group title, fields)
 FIELD_GROUPS = [
-    ("Core stats", ["level", "cr_num", "hp", "ac", "attack_bonus", "damage_avg"]),
+    ("Core stats", ["level", "cr_num", "hp", "ac", "attack_bonus", "damage_avg",
+                    "attacks_per_round", "damage_per_round"]),
     (
         "Ability scores",
         ["ability_str", "ability_dex", "ability_con",
@@ -58,6 +65,36 @@ ROLE_OPTIONS = [
     {"label": "Elite", "value": "elite"},
     {"label": "Solo", "value": "solo"},
 ]
+
+
+# 4e combat roles; skirmisher (the 4e baseline monster) is the reference, so
+# it adds no term. Shown only when some rule in the direction uses one.
+COMBAT_ROLE_OPTIONS = [
+    {"label": "Skirmisher", "value": "skirmisher"},
+    {"label": "Artillery", "value": "artillery"},
+    {"label": "Brute", "value": "brute"},
+    {"label": "Controller", "value": "controller"},
+    {"label": "Lurker", "value": "lurker"},
+    {"label": "Soldier", "value": "soldier"},
+]
+COMBAT_ROLES = [o["value"] for o in COMBAT_ROLE_OPTIONS if o["value"] != "skirmisher"]
+
+
+def role_state(tier, combat):
+    """Indicator inputs for the role selectors: role_minion/elite/solo and
+    role_artillery/brute/... (skirmisher and standard are all zeros)."""
+    state = {f"role_{t}": 1.0 if tier == t else 0.0 for t in ("minion", "elite", "solo")}
+    state.update({f"role_{r}": 1.0 if combat == r else 0.0 for r in COMBAT_ROLES})
+    return state
+
+
+def uses_combat_role(direction):
+    """True if any rule (or its direct twin) in the direction has a combat-role term."""
+    return any(
+        part[len("role_"):] in COMBAT_ROLES
+        for m in MODELS.values() if m["direction"] == direction
+        for rule in (m, m.get("direct", {}))
+        for f in rule.get("features", []) for part in f.split("*"))
 
 
 def is_role_feature(field):
@@ -119,13 +156,15 @@ def predict_with_interval(model, values, role=None):
 
 
 def fields_for_direction(direction):
-    """Return (input_fields, output_fields) for the chosen direction."""
+    """Return (input_fields, output_fields) for the chosen direction. The
+    target level/CR is both: an optional input and a converted output."""
     input_fields = set()
     output_fields = set()
     for key, model in MODELS.items():
         if model["direction"] != direction:
             continue
-        input_fields.update(x for f in model["features"] for x in input_stats(f))
+        for m in (model, model.get("direct", {})):
+            input_fields.update(x for f in m.get("features", []) for x in input_stats(f))
         output_fields.add(model["target"])
     # deterministic order
     input_fields = [f for f in FIELD_ORDER if f in input_fields]
@@ -147,6 +186,12 @@ def group_fields(fields):
     return groups
 
 
+def input_label(field, direction):
+    if field == TARGET_SCALE[direction]:
+        return "Target " + ("CR" if field == "cr_num" else "level")
+    return label_for(field)
+
+
 def label_for(field):
     mapping = {
         "level": "Level",
@@ -154,7 +199,9 @@ def label_for(field):
         "hp": "HP",
         "ac": "AC",
         "attack_bonus": "Attack Bonus",
-        "damage_avg": "Damage Average",
+        "damage_avg": "Damage per Attack",
+        "damage_per_round": "Damage per Round",
+        "attacks_per_round": "Attacks per Round",
         "ability_str": "STR",
         "ability_dex": "DEX",
         "ability_con": "CON",
@@ -277,6 +324,20 @@ app.layout = html.Div(
                                                     ),
                                                 ],
                                             ),
+                                            html.Div(
+                                                id="combat-role-group",
+                                                className="field-group",
+                                                children=[
+                                                    html.H4(id="combat-role-label",
+                                                            className="field-group-title"),
+                                                    dcc.RadioItems(
+                                                        id="combat-role",
+                                                        className="direction-toggle role-toggle",
+                                                        options=COMBAT_ROLE_OPTIONS,
+                                                        value="skirmisher",
+                                                    ),
+                                                ],
+                                            ),
                                             html.Div(id="input-fields"),
                                         ],
                                     ),
@@ -309,8 +370,8 @@ app.layout = html.Div(
                                     html.P(
                                         "Each rule is a short linear equation meant to "
                                         "be usable by hand: the matching stat in the "
-                                        "other edition, the level/CR scale, and 4e role "
-                                        "adjustments, with terms kept only if they "
+                                        "other edition, the target edition's level/CR, "
+                                        "and 4e role adjustments, with terms kept only if they "
                                         "measurably help. Rules are fit with Huber loss "
                                         "(a few unusual monsters can't drag a rule), "
                                         "counting related pairs (a 4e variant matched to "
@@ -322,11 +383,23 @@ app.layout = html.Div(
                                         "monster never straddle train and test), scored "
                                         "on same-creature pairs; ± is the spread over "
                                         "repeats. 4e role (minion / elite / solo vs. "
-                                        "standard) enters as indicator terms; for 5e → 4e "
-                                        "it is the role the converted monster should "
-                                        "play. 4e multiplies solo HP by 4, so the solo HP "
-                                        "bonus is a slope on CR, and 4e "
+                                        "standard) enters as indicator terms, and so "
+                                        "does the combat role (artillery, brute, "
+                                        "controller, lurker, soldier vs. skirmisher) "
+                                        "where it measurably helps a rule; for 5e → 4e "
+                                        "these are the roles the converted monster "
+                                        "should play. 4e multiplies solo HP by 4, so the solo HP "
+                                        "bonus is a slope on level, and 4e "
                                         "minions always have 1 HP."
+                                    ),
+                                    html.P(
+                                        "Level/CR in a rule is the target edition's, "
+                                        "the way each edition's own monster math works: "
+                                        "type the level/CR you want and these rules "
+                                        "apply. Leave it blank and the first rule "
+                                        "converts it, while every other stat uses its "
+                                        "direct rule (shown under each card) from the "
+                                        "source monster's own level/CR."
                                     ),
                                     html.P(
                                         "The range is an 80% cross-conformal "
@@ -359,6 +432,8 @@ app.layout = html.Div(
     Output("input-fields", "children"),
     Output("output-fields", "children"),
     Output("role-label", "children"),
+    Output("combat-role-label", "children"),
+    Output("combat-role-group", "style"),
     Input("direction", "value"),
 )
 def update_layout(direction):
@@ -366,21 +441,25 @@ def update_layout(direction):
     target_edition = "5e" if direction == "4e_to_5e" else "4e"
     input_fields, output_fields = fields_for_direction(direction)
 
+    scale = TARGET_SCALE[direction]
+    groups = group_fields([f for f in input_fields if f != scale])
+    if scale in input_fields:
+        groups.append(("Target (optional — blank uses the direct rules)", [scale]))
     input_children = []
-    for title, fields in group_fields(input_fields):
+    for title, fields in groups:
         grid = []
         for f in fields:
             grid.append(
                 html.Div(
                     className="field",
                     children=[
-                        html.Label(label_for(f), className="field-label"),
+                        html.Label(input_label(f, direction), className="field-label"),
                         dcc.Input(
                             id={"type": "input", "field": f},
                             className="field-input",
                             type="number",
                             value="",
-                            placeholder="—",
+                            placeholder="auto" if f == scale else "—",
                         ),
                     ],
                 )
@@ -423,13 +502,32 @@ def update_layout(direction):
         )
 
     role_label = "4e role" if source_edition == "4e" else "Target 4e role"
+    combat_label = ("4e combat role" if source_edition == "4e"
+                    else "Target 4e combat role")
     return (
         f"{source_edition} monster",
         f"{target_edition} conversion",
         input_children,
         output_children,
         role_label,
+        combat_label,
+        {} if uses_combat_role(direction) else {"display": "none"},
     )
+
+
+def target_scale_given(direction, state):
+    """True when the GM typed a target level/CR."""
+    try:
+        float(state.get(TARGET_SCALE[direction]))
+        return True
+    except (TypeError, ValueError):
+        return False
+
+
+def rule_for(model, scale_given):
+    """The rule to apply: on the target level/CR when it is given, else the
+    direct rule (source level/CR) when the model has one."""
+    return model if scale_given or "direct" not in model else model["direct"]
 
 
 # The interval slot is always present (empty when there is no range) so the
@@ -440,7 +538,7 @@ EMPTY_OUTPUT = [html.Span("—", className="stat-pred stat-empty"), NO_INTERVAL]
 
 def format_output(target, pred, low, high):
     """Render a prediction and its interval as stat-value children."""
-    if target in ("cr_num", "damage_avg"):
+    if target in ("cr_num", "damage_avg", "damage_per_round"):
         pred_s, lo_s, hi_s = f"{pred:.2f}", f"{low:.2f}", f"{high:.2f}"
     else:
         pred_s, lo_s, hi_s = str(round(pred)), str(round(low)), str(round(high))
@@ -461,9 +559,10 @@ def format_output(target, pred, low, high):
     Input("direction", "value"),
     Input({"type": "input", "field": ALL}, "value"),
     Input("role", "value"),
+    Input("combat-role", "value"),
     prevent_initial_call=False,
 )
-def compute_outputs(direction, input_values, role):
+def compute_outputs(direction, input_values, role, combat_role="skirmisher"):
     # Match input values to their fields via the ALL pattern matching order.
     input_fields, output_fields = fields_for_direction(direction)
     ctx = dash.callback_context
@@ -491,20 +590,23 @@ def compute_outputs(direction, input_values, role):
             pass  # already known
     if input_ids != set(input_fields):
         raise PreventUpdate
-    for tier in ("minion", "elite", "solo"):
-        state[f"role_{tier}"] = 1.0 if role == tier else 0.0
+    if not uses_combat_role(direction):
+        combat_role = "skirmisher"  # selector hidden: no term to apply
+    state.update(role_state(role, combat_role))
 
     empty = EMPTY_OUTPUT
     results = {f: empty for f in output_fields}
+    given = target_scale_given(direction, state)
     for key, model in MODELS.items():
         if model["direction"] != direction:
             continue
         target = model["target"]
-        values = feature_values(model["features"], state)
-        if values is None and role not in model.get("fixed_by_role", {}):
+        rule = rule_for(model, given)
+        values = feature_values(rule["features"], state)
+        if values is None and role not in rule.get("fixed_by_role", {}):
             results[target] = empty
             continue
-        pred, low, high = predict_with_interval(model, values, role)
+        pred, low, high = predict_with_interval(rule, values, role)
         results[target] = format_output(target, pred, low, high)
 
     # Dash fills pattern-matched outputs in ctx.outputs_list order, which after
@@ -552,6 +654,16 @@ def model_card(model):
                 children=[html.Span("80% range", className="legend-chip"),
                           html.Code(model.get("interval_rule", model.get("interval", "")))],
             ),
+            *([html.Div(
+                className="interval-rule",
+                children=[html.Span("target " + ("CR" if model["target_scale"] == "cr_num"
+                                                 else "level") + " blank",
+                                    className="legend-chip"),
+                          html.Code(f"{model['direct']['equation']}  "
+                                    f"{model['direct']['interval_rule']}  ·  error "
+                                    f"{model['direct']['mae'] / model['direct']['baseline_mae']:.0%}"
+                                    f", R² {model['direct']['r2']:.2f}")],
+            )] if "direct" in model else []),
             html.Div(
                 className="metric-grid",
                 children=[

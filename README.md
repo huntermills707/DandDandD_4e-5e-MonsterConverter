@@ -41,6 +41,7 @@ pipeline/
     eval_matching.py   name-blind retrieval evaluation of the scorer
     datasets.py     loads real local data or the surrogate (--data flag)
     make_surrogate.py  writes data/surrogate/ from local real data
+    damage.py       damage per attack / per round from stat-block text
 data/
     surrogate/      masked numeric stats: pairs + per-edition monsters (tracked)
     raw/            extracted PDF text + parsed JSONL (local only, gitignored)
@@ -132,13 +133,66 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
      related; 154 unique 4e, 104 unique 5e monsters).
 5. [x] **Modeling** — `models/fit_models.py` fits per-field linear
    regressions in both directions (4e→5e and 5e→4e): HP, AC, attack bonus,
-   damage average, CR/level, all six ability scores, and saving throws (5e
-   saves from 4e defenses; 4e defenses from 5e saves/abilities).
+   damage per attack (and 5e damage per round), CR/level, all six ability
+   scores, and saving throws (5e saves from 4e defenses; 4e defenses from
+   5e saves/abilities).
    - **Design goal: easy, explainable conversion.** Each stat converts by
      a short rule a GM can apply by hand — the matching stat in the other
-     edition, the level/CR scale, and 4e role adjustments — e.g.
-     *5e HP = 0.16·HP + 5.6·level − 7.1 (solo +84)*. All rules are listed in
-     [`models/conversion_rules.md`](models/conversion_rules.md).
+     edition, the target edition's level/CR, and 4e role adjustments — e.g.
+     *4e AC = 0.2·AC + 0.95·level + 11.5 (elite +1.4, solo +1.2)*. All rules
+     are listed in [`models/conversion_rules.md`](models/conversion_rules.md).
+   - **Pick the level/CR, then convert** (`models/experiments.py
+     --two-stage`). Each edition sets most stats from its own level/CR
+     (4e: attack = level + 5, AC ≈ level + 14), so rules are stated on the
+     *target* edition's scale: the GM picks the 4e level or 5e CR, or the
+     first rule converts it. With the level given, 5e→4e AC, Fort/Ref/Will
+     and attack error falls from 52–55% of the baseline to 16–26% (R²
+     0.66–0.73 → 0.93–0.97), and HP from 26% to 11%; the fitted rules
+     recover 4e's monster math unprompted (*attack = level + 5*, *HP =
+     8.7·level + 19, solo +38·level*). 4e→5e gains less (attack 47% → 33%,
+     WIS/CHA saves 67–70% → 51–53%), since 5e's bounded math ties fewer
+     stats to CR. A rule on a *converted* level/CR does no better than one
+     on the source level/CR, and on the 5e saves it is worse (selection,
+     scored with the true CR, drops the 4e ability), so each stat also keeps
+     a **direct** rule on the source level/CR, used when the target is left
+     blank. Comparing each conversion to a ceiling — the target stat
+     predicted from the *true* target level/CR and role alone — shows where
+     error lives: the 5e→4e defenses and attack sat far above theirs
+     (0.52–0.55 vs. 0.19–0.30), purely from guessing the level.
+   - **Damage measurement** (`pipeline/damage.py`). The old damage was the
+     single biggest-damage attack, which in 5e ignored riders ("Hit: 6
+     (1d6 + 3) bludgeoning damage plus 9 (2d8) fire damage" counted as
+     6) and Multiattack, and in 4e often picked a recharge breath weapon.
+     The 4e→5e damage rule had collapsed to a constant (*11, solo +5.8*;
+     83% error, R² 0.03): the target was close to unpredictable from any
+     feature. Now 4e damage is the **basic attack** (the at-will per-hit
+     damage 4e's DMG sets by level; the old max is kept as `damage_max`),
+     5e damage per attack **includes riders**, and 5e **damage per round**
+     sums the Multiattack routine (unknown, not guessed, when the routine
+     names an attack lost to a page break). Damage per round tracks CR
+     better than single attacks (r 0.78 vs. 0.65 in the 5e corpus) and
+     correlates better across editions (log r 0.55 vs. 0.40). 4e→5e damage
+     error is now 58–59% (R² 0.51); damage/round is *5.9·attacks/round +
+     2.5·CR + 2.1*, with 4e "makes two attacks" powers counting toward
+     5e Multiattack. Both sit at their ceilings (the true CR predicts them
+     no better).
+   - **Edition economics, tested and not adopted.** Hit chance (4e attack
+     vs. level, 5e attack vs. CR), HP relative to the level's budget
+     (rounds to kill), recharge/breath damage, expected damage × hit
+     chance, combat roles, and transferring a monster's damage *relative
+     to its edition's typical damage at its level* (curves from all ~800
+     unpaired monsters) all moved 4e→5e damage error by under 3%, or made
+     it worse. Once CR and the attack count are set, 5e damage is the 5e
+     CR budget. The one signal found runs the other way: 4e brutes hit
+     harder (5e→4e damage −7% with a brute term), which would need a
+     combat-role input in the app. Saves chained through 5e's own formula
+     (ability modifier + proficiency bonus, which 82–94% of listed saves
+     obey exactly) helped DEX/CON but hurt WIS/CHA: 5e lists only
+     proficient saves, which skew high on their ability. Size helps 4e→5e
+     STR (−11%) and nothing else beyond noise. DEX and WIS stay weak (74–86%
+     error) in both directions; they already convert better than their
+     ceilings, so what remains is creature-by-creature disagreement between
+     the editions' designers.
    - **How the rules were chosen** (`models/experiments.py`, all under the
      same grouped CV): adding **4e role** (minion / elite / solo; for
      5e→4e, the role the converted monster should play) was the largest
@@ -162,7 +216,8 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
      (55.0–55.9%); half weight is the middle choice.
    - **Role interactions** (`models/experiments.py --interactions`, nested
      CV): 4e multiplies solo HP by 4, so when converting *to* 4e the solo HP
-     bonus grows with level. A solo × CR slope replaces the flat bonus
+     bonus grows with level (a slope on 4e level in the rule on the target
+     level; on CR in the direct rule). A solo × CR slope replaces the flat bonus
      (*4e HP = 0.87·HP + 39, elite +140, solo +26·CR*), cutting 5e→4e HP
      error from 39% to 29% of the baseline under least squares (26% with
      the current fit; R² 0.86 → 0.93). The slope replaces the flat bonus
@@ -172,10 +227,21 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
      minions, and they are left out of its fit. The other candidates were combat roles (brute, lurker,
      soldier, ... vs. skirmisher), elite/solo slopes on level/CR for every
      stat, and slopes on the counterpart stat. Offered all at once or forward
-     one at a time, they help some fields and hurt more (median error
-     60.2% → 59.2–61.2%, least squares), mostly by chasing noise in the small 5e
-     saving-throw sets. Minion slopes can't be scored: all 6 minion pairs are
-     related, not same-creature.
+     one at a time to the rules on the source level/CR, they help some fields
+     and hurt more (median error 60.2% → 59.2–61.2%, least squares), mostly by
+     chasing noise in the small 5e saving-throw sets. Minion slopes can't be
+     scored: all 6 minion pairs are related, not same-creature.
+   - **Combat roles converting to 4e** (`models/experiments.py --combat`,
+     nested CV). On the target level, 4e's role math shows through: the
+     4e DMG adjusts HP, AC, defenses, attack, and damage by combat role, and
+     offered to those 5e→4e rules' forward step (entering only if they cut
+     CV error 3%), brute and soldier enter in nearly every fold. Held-out
+     error falls for AC by 28%, attack 20%, HP and Ref 8%, damage 4%. The
+     app's **combat role** selector (artillery, brute, controller, lurker,
+     soldier; skirmisher = no adjustment) picks the role the converted
+     monster should play. Offered to 4e→5e rules or the direct rules, combat
+     roles mostly chased noise (4e→5e saves 2–8% worse), so they aren't, and
+     the selector is hidden for 4e → 5e.
    - **Not adopted: elite/solo slopes for 4e→5e saves.** They looked
      promising in that comparison, so they were rechecked on fresh folds
      (nested CV, ×10, two seeds). CON save error fell from 84% to 66% of
@@ -204,7 +270,10 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
 6. [x] **Web app** — `app/app.py` is a bidirectional Dash dashboard with a
    direction switch (4e → 5e / 5e → 4e), a **Convert** tab showing predicted
    stats with intervals, and an **Explain** tab listing every fitted equation,
-   features, R², MAE, and interval width.
+   features, R², MAE, and interval width. A 4e role tier selector and, for
+   5e → 4e, a combat role selector set the role terms. An optional **target level/CR**
+   field switches every rule to the target-scale version; left blank, the
+   level/CR is converted and the direct rules apply.
 7. [x] **Difficulty scaler** — `models/fit_scale_models.py` fits within-edition
    scaling curves (stat ~ level for 4e, stat ~ CR for 5e; HP/damage
    multiplicative, everything else additive, pooled fallback for sparse 5e
@@ -268,6 +337,7 @@ parser special-casing.
 .venv/bin/python -m models.experiments --nested-selection
 .venv/bin/python -m models.experiments --interactions
 .venv/bin/python -m models.experiments --loss
+.venv/bin/python -m models.experiments --two-stage
 
 # fit within-edition scaling curves (level/CR -> stat)
 .venv/bin/python models/fit_scale_models.py

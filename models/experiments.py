@@ -11,6 +11,8 @@ Usage:
     .venv/bin/python -m models.experiments --nested-selection
     .venv/bin/python -m models.experiments --interactions
     .venv/bin/python -m models.experiments --loss
+    .venv/bin/python -m models.experiments --two-stage
+    .venv/bin/python -m models.experiments --combat
 """
 
 import argparse
@@ -282,6 +284,97 @@ def losses(pairs, n_repeats=3):
                                      for i, v in enumerate(row)))
 
 
+def two_stage(pairs, n_repeats=10):
+    """Rules on the source scale (direct) vs. on the target edition's scale,
+    with that scale converted by a level/CR rule fit on the training folds
+    (two-stage) or given (the GM picks it). Unpruned: counterpart + scale +
+    role tiers, Huber, related pairs at half weight. MAE / baseline."""
+    from models.fit_models import (COUNTERPART, ROLE_FEATURES, SCALE, TARGET_SCALE,
+                                   feature_value, grouped_folds, rule_pairs, source_target)
+
+    def fit(X, y, same):
+        m = LinearDesign("x", fit="huber", interval="scaled", related_weight=0.5)
+        m.features = [f"f{k}" for k in range(X.shape[1])]
+        return m.fit(X, y, same)
+
+    for direction in ("4e_to_5e", "5e_to_4e"):
+        print(f"\n== {direction:16s} direct  two-stage  given scale")
+        s_scale, t_scale = SCALE[direction], TARGET_SCALE[direction]
+        for target, cps in COUNTERPART[direction].items():
+            if target == t_scale:
+                continue
+            spec = {"direction": direction, "target": target}
+            src, tgt = source_target(spec)
+            rows = [p for p in rule_pairs(pairs, spec)
+                    if p[tgt].get(target) is not None and p[tgt].get(t_scale) is not None
+                    and all(p[src].get(c) is not None for c in cps + [s_scale])]
+            y = np.array([p[tgt][target] for p in rows], float)
+            g = np.array([p["group"] for p in rows])
+            same = np.array([p["match_type"] == "same" for p in rows])
+            tiers = np.array([[feature_value(p, src, t) for t in ROLE_FEATURES] for p in rows])
+            C = np.array([[p[src][c] for c in cps] for p in rows]).reshape(len(rows), -1)
+            S = np.array([[p[src][s_scale]] for p in rows], float)
+            T = np.array([[p[tgt][t_scale]] for p in rows], float)
+            ratios = {k: [] for k in ("direct", "two-stage", "given")}
+            for rep in range(n_repeats):
+                P = {k: np.empty_like(y) for k in ratios}
+                base = np.empty_like(y)
+                for test in grouped_folds(g, 5, 1000 + rep):
+                    tr = np.setdiff1d(np.arange(len(y)), test)
+                    Xd = np.hstack([C, S, tiers])
+                    P["direct"][test] = fit(Xd[tr], y[tr], same[tr]).predict(Xd[test])
+                    Xs = np.hstack([S, tiers])
+                    T_hat = fit(Xs[tr], T[tr, 0], same[tr]).predict(Xs)[:, None]
+                    Xt = np.hstack([C, T, tiers])
+                    mt = fit(Xt[tr], y[tr], same[tr])
+                    P["given"][test] = mt.predict(Xt[test])
+                    P["two-stage"][test] = mt.predict(np.hstack([C, T_hat, tiers])[test])
+                    base[test] = y[tr].mean()
+                b = np.abs(y - base)[same].mean()
+                for k in ratios:
+                    ratios[k].append(np.abs(y - P[k])[same].mean() / b)
+            v = [np.mean(ratios[k]) for k in ratios]
+            print(f"  {target:18s} {v[0]:6.3f}  {v[1]:9.3f}  {v[2]:11.3f}")
+
+
+def _combat_job(pairs, n_repeats, job):
+    from models.fit_models import COMBAT_ROLES, candidate_features, direct_spec
+
+    spec, mode = job
+    if mode == "direct":
+        spec = direct_spec(spec)
+    pool = candidate_features(spec)
+    combat = [f"role_{r}" for r in COMBAT_ROLES]
+    return nested_ratios(pairs, spec, {"tiers": (pool, [], 0.0),
+                                       "+ combat (forward 3%)": (pool, combat, 0.03)},
+                         n_repeats)
+
+
+def combat_roles(pairs, n_repeats=5):
+    """Nested CV: 4e combat roles (artillery, brute, controller, lurker,
+    soldier vs. skirmisher) offered to each rule's forward step, entering
+    only if they cut CV error by 3%. Rules on the target level/CR and the
+    direct rules, separately."""
+    from models.fit_models import TARGET_SCALE
+
+    jobs = [(s, mode) for s in MODEL_SPECS for mode in ("target", "direct")
+            if mode == "target" or s["target"] != TARGET_SCALE[s["direction"]]]
+    with ProcessPoolExecutor() as ex:
+        res = list(ex.map(partial(_combat_job, pairs, n_repeats), jobs))
+    for mode in ("target", "direct"):
+        rows = [(s, r) for (s, m), r in zip(jobs, res) if m == mode]
+        a = [r[0]["tiers"] for _, r in rows]
+        b = [r[0]["+ combat (forward 3%)"] for _, r in rows]
+        print(f"\n== rules on the {mode} level/CR: median {np.median(a):.3f} -> {np.median(b):.3f}, "
+              f"mean {np.mean(a):.3f} -> {np.mean(b):.3f}, better/worse >1%: "
+              f"{sum(y < x * 0.99 for x, y in zip(a, b))}/{sum(y > x * 1.01 for x, y in zip(a, b))}")
+        for (s, (r, kept)), x, y in zip(rows, a, b):
+            roles = [(f[5:], c) for f, c in kept["+ combat (forward 3%)"].most_common()
+                     if f[5:] in ("artillery", "brute", "controller", "lurker", "soldier")]
+            print(f"  {s['direction'] + '/' + s['target']:26s} {x:.3f} -> {y:.3f} "
+                  f"({(y - x) / x:+5.1%})  entered: {roles}")
+
+
 def _interaction_job(pairs, n_repeats, spec):
     return nested_ratios(pairs, spec, interaction_variants(spec), n_repeats)
 
@@ -330,6 +423,10 @@ def main(argv=None):
                     help="role/interaction candidate pools under nested CV")
     ap.add_argument("--loss", action="store_true",
                     help="fitting loss and related-pair weight under nested CV")
+    ap.add_argument("--combat", action="store_true",
+                    help="4e combat roles offered to each rule's forward step, nested CV")
+    ap.add_argument("--two-stage", action="store_true",
+                    help="rules on the target edition's level/CR, given or converted")
     args = ap.parse_args(argv)
     pairs = load_pairs(resolve_source(args.data))
 
@@ -338,6 +435,12 @@ def main(argv=None):
         return
     if args.loss:
         losses(pairs)
+        return
+    if args.two_stage:
+        two_stage(pairs)
+        return
+    if args.combat:
+        combat_roles(pairs)
         return
 
     if args.nested_selection:

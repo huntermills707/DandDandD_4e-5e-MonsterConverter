@@ -17,8 +17,13 @@ regressions will later fit. See pipeline/matcher.py.
 
 import csv
 import json
-import re
+import sys
 from pathlib import Path
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from pipeline.damage import damage_4e, damage_5e  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW_DIR = ROOT / "data" / "raw"
@@ -77,56 +82,6 @@ def parse_cr(cr) -> float:
         return None
 
 
-def avg_damage(dice: str) -> float:
-    """Average of a dice expression like '2d8+8' or '1d6'."""
-    if not dice:
-        return None
-    dice = dice.lower().replace(" ", "").replace("−", "-")
-    m = re.match(r"^(?:(\d+)d(\d+))?(?:\+?(-?\d+))?$", dice)
-    if not m:
-        try:
-            return float(dice)
-        except ValueError:
-            return None
-    count = int(m.group(1) or 0)
-    sides = int(m.group(2) or 0)
-    mod = int(m.group(3) or 0)
-    return count * (sides + 1) / 2 + mod
-
-
-def pick_attack(attacks):
-    """Choose the attack with the highest average damage."""
-    if not attacks:
-        return None
-    scored = []
-    for a in attacks:
-        dmg = None
-        if "damage_avg" in a and a["damage_avg"] is not None:
-            dmg = float(a["damage_avg"])
-        elif "damage_dice" in a and a["damage_dice"]:
-            dmg = avg_damage(a["damage_dice"])
-        bonus = a.get("bonus")
-        scored.append((dmg if dmg is not None else -1, bonus, a))
-    scored.sort(key=lambda x: x[0], reverse=True)
-    return scored[0][2]
-
-
-def attack_summary(attacks):
-    a = pick_attack(attacks)
-    if not a:
-        return {}
-    dmg = None
-    if "damage_avg" in a and a["damage_avg"] is not None:
-        dmg = float(a["damage_avg"])
-    elif "damage_dice" in a and a["damage_dice"]:
-        dmg = avg_damage(a["damage_dice"])
-    return {
-        "attack_bonus": a.get("bonus"),
-        "damage_avg": dmg,
-        "damage_dice": a.get("damage_dice"),
-    }
-
-
 def abilities(rec):
     ab = rec.get("abilities") or {}
     return {
@@ -141,8 +96,8 @@ def abilities(rec):
 
 def build_side(rec, edition: str):
     ab = abilities(rec)
-    atk = attack_summary(rec.get("attacks", []))
     if edition == "4e":
+        atk = damage_4e(rec)
         return {
             "name": rec["name"],
             "level": rec.get("level"),
@@ -155,15 +110,14 @@ def build_side(rec, edition: str):
             "will": rec.get("will"),
             "xp": rec.get("xp"),
             **{f"ability_{k}": v for k, v in ab.items()},
-            "attack_bonus": atk.get("attack_bonus"),
-            "damage_avg": atk.get("damage_avg"),
-            "damage_dice": atk.get("damage_dice"),
+            **atk,
             "flags": {
                 "manual_fix": bool(rec.get("manual_fix")),
                 "ocr_suspect": bool(rec.get("ocr_suspect")),
             },
         }
     else:
+        atk = damage_5e(rec)
         saves = rec.get("saves") or {}
         return {
             "name": rec["name"],
@@ -175,9 +129,7 @@ def build_side(rec, edition: str):
             "xp": rec.get("xp"),
             **{f"ability_{k}": v for k, v in ab.items()},
             **{f"save_{k}": v for k, v in saves.items()},
-            "attack_bonus": atk.get("attack_bonus"),
-            "damage_avg": atk.get("damage_avg"),
-            "damage_dice": atk.get("damage_dice"),
+            **atk,
             "flags": {
                 "manual_fix": bool(rec.get("manual_fix")),
                 "ocr_suspect": bool(rec.get("ocr_suspect")),
@@ -313,14 +265,14 @@ def write_outputs(pairs):
                "accepted", "review", "note"]
     ordered += [f"4e_{k}" for k in [
         "name", "level", "role", "hp", "ac", "fort", "ref", "will", "xp",
-        "attack_bonus", "damage_avg", "damage_dice",
+        "attack_bonus", "damage_avg", "damage_max", "attacks_per_round",
         "ability_str", "ability_dex", "ability_con",
         "ability_int", "ability_wis", "ability_cha",
         "type_line", "manual_fix", "ocr_suspect",
     ]]
     ordered += [f"5e_{k}" for k in [
         "name", "cr", "cr_num", "hp", "ac", "xp",
-        "attack_bonus", "damage_avg", "damage_dice",
+        "attack_bonus", "damage_avg", "damage_per_round",
         "ability_str", "ability_dex", "ability_con",
         "ability_int", "ability_wis", "ability_cha",
         "save_str", "save_dex", "save_con", "save_int", "save_wis", "save_cha",

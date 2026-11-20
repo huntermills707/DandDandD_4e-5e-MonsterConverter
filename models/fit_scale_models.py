@@ -30,7 +30,7 @@ MODELS_DIR = ROOT / "models"
 
 MIN_N = 30
 
-MULTIPLICATIVE = {"hp", "damage_avg"}
+MULTIPLICATIVE = {"hp", "damage_avg", "damage_per_round"}
 
 EDITIONS = {
     "4e": {
@@ -45,7 +45,7 @@ EDITIONS = {
     "5e": {
         "axis": "cr_num",
         "stats": [
-            "hp", "ac", "attack_bonus", "damage_avg",
+            "hp", "ac", "attack_bonus", "damage_avg", "damage_per_round",
             "ability_str", "ability_dex", "ability_con",
             "ability_int", "ability_wis", "ability_cha",
             "save_str", "save_dex", "save_con",
