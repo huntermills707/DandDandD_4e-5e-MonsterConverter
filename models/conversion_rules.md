@@ -11,37 +11,37 @@ guessing the average (lower is better).
 
 | Stat | Rule | 80% range | Error | R² |
 |---|---|---|---|---|
-| CR | 0.52·level - 1.1  (solo +8.7) | ± 0.35·(result + 5) | 43% | 0.75 |
-| HP | 0.18·HP + 4.7·level - 2  (solo +72) | ± 0.28·(result + 76) | 37% | 0.85 |
-| AC | 0.18·AC + 9.7  (solo +4.1) | ± 0.1·(result + 15) | 55% | 0.62 |
-| attack | 0.21·level + 3.2  (minion -1.4, elite +1.3, solo +5.7) | ± 0.2·(result + 6) | 50% | 0.73 |
-| damage | 10.8  (elite +2.5, solo +6.5) | ± 0.29·(result + 11) | 84% | 0.06 |
-| STR | 0.75·STR + 1  (elite +1.5, solo +5.8) | ± 0.14·(result + 17) | 51% | 0.72 |
-| DEX | 0.37·DEX - 0.12·level + 8.2  (solo -2.2) | ± 0.12·(result + 13) | 76% | 0.25 |
-| CON | 0.25·CON + 0.21·level + 8.3  (elite +0.66, solo +5.4) | ± 0.11·(result + 16) | 52% | 0.72 |
-| INT | 0.73·INT + 2.6 | ± 0.17·(result + 10) | 50% | 0.73 |
-| WIS | 0.17·WIS + 0.14·level + 8 | ± 0.15·(result + 12) | 85% | 0.22 |
-| CHA | 0.55·CHA + 3  (elite +1.2, solo +4.8) | ± 0.18·(result + 11) | 59% | 0.59 |
-| DEX save | 0.18·DEX + 0.061·level + 1.6 | ± 0.21·(result + 6) | 81% | 0.18 |
-| CON save | 0.22·level + 4.1  (solo +3.7) | ± 0.22·(result + 8) | 78% | 0.16 |
-| WIS save | 0.18·level + 2.7  (elite +1.3, solo +1.5) | ± 0.2·(result + 6) | 72% | 0.24 |
-| CHA save | 0.21·level + 2.4  (elite +1.8, solo +2.9) | ± 0.15·(result + 7.5) | 70% | 0.34 |
+| CR | 0.56·level - 1.3  (solo +8.7) | ± 0.35·(result + 5) | 41% | 0.78 |
+| HP | 0.16·HP + 5.6·level - 7.1  (solo +84) | ± 0.27·(result + 76) | 37% | 0.86 |
+| AC | 0.21·AC + 9.1  (solo +4.1) | ± 0.1·(result + 15) | 54% | 0.64 |
+| attack | 0.25·level + 3.2  (solo +5.8) | ± 0.2·(result + 6) | 48% | 0.76 |
+| damage | 11  (solo +5.8) | ± 0.28·(result + 11) | 83% | 0.03 |
+| STR | 0.71·STR + 2.2  (elite +1.9, solo +6.3) | ± 0.14·(result + 17) | 49% | 0.74 |
+| DEX | 0.37·DEX - 0.13·level + 8.7  (solo -2.6) | ± 0.13·(result + 13) | 74% | 0.27 |
+| CON | 0.24·CON + 0.24·level + 8.3  (elite +0.99, solo +5.6) | ± 0.11·(result + 16) | 49% | 0.74 |
+| INT | 0.76·INT + 2.2 | ± 0.16·(result + 10) | 50% | 0.73 |
+| WIS | 0.21·WIS + 0.16·level + 7.6 | ± 0.15·(result + 12) | 82% | 0.25 |
+| CHA | 0.62·CHA + 1.9  (elite +1, solo +5.1) | ± 0.19·(result + 11) | 60% | 0.57 |
+| DEX save | 0.16·DEX + 0.092·level + 1.4 | ± 0.2·(result + 6) | 79% | 0.18 |
+| CON save | 0.28·level + 3.6  (solo +3.1) | ± 0.17·(result + 8) | 61% | 0.36 |
+| WIS save | 0.23·level + 1.5  (elite +1.6, solo +1.9) | ± 0.19·(result + 6) | 70% | 0.21 |
+| CHA save | 0.25·level + 1.4  (elite +2.6, solo +3.2) | ± 0.15·(result + 7.5) | 67% | 0.37 |
 
 ## 5e → 4e
 
 | Stat | Rule | 80% range | Error | R² |
 |---|---|---|---|---|
-| level | 0.99·CR + 6.6  (solo -6.1) | ± 0.24·(result + 12) | 60% | 0.66 |
-| HP | 0.83·HP + 50.5  (elite +130, solo +31·CR; minion = 1) | ± 0.23·(result + 140) | 29% | 0.93 |
-| AC | CR + 20.6  (solo -5.1) | ± 0.12·(result + 26) | 58% | 0.65 |
-| Fort | 0.24·STR + 0.62·CON + 0.61·CR + 8  (solo -5.8) | ± 0.12·(result + 25) | 56% | 0.71 |
-| Ref | CR + 17.7  (solo -4.1) | ± 0.13·(result + 23) | 58% | 0.67 |
-| Will | 0.32·CHA + 0.84·CR + 14.7  (solo -5.1) | ± 0.15·(result + 23) | 58% | 0.65 |
-| attack | 0.97·CR + 10.9  (solo -6.5) | ± 0.19·(result + 16) | 61% | 0.63 |
-| damage | 0.79·CR + 9.3 | ± 0.22·(result + 12) | 68% | 0.55 |
-| STR | 0.81·STR + 6.1  (solo -2.9) | ± 0.12·(result + 19) | 62% | 0.62 |
-| DEX | 0.71·DEX + 7.3  (solo +4.8) | ± 0.15·(result + 16) | 90% | 0.24 |
-| CON | 0.78·CON + 6.2  (solo -1.2) | ± 0.12·(result + 18) | 75% | 0.43 |
-| INT | INT  (elite +0.75) | ± 0.19·(result + 10) | 50% | 0.73 |
-| WIS | 0.27·WIS + 0.15·CR + 10.3 | ± 0.13·(result + 14) | 86% | 0.20 |
-| CHA | 0.91·CHA + 3.8  (solo -3.2) | ± 0.19·(result + 13) | 71% | 0.46 |
+| level | 1.1·CR + 4.9  (solo -8.5) | ± 0.24·(result + 12) | 52% | 0.68 |
+| HP | 0.87·HP + 39  (elite +140, solo +26·CR; minion = 1) | ± 0.23·(result + 140) | 26% | 0.93 |
+| AC | 0.33·AC + 0.97·CR + 14.5  (minion +3.4, elite +1.6, solo -6.2) | ± 0.12·(result + 26) | 53% | 0.68 |
+| Fort | 0.36·STR + 0.49·CON + 0.74·CR + 6.6  (solo -7.6) | ± 0.12·(result + 25) | 52% | 0.73 |
+| Ref | 1.1·CR + 16.1  (solo -5.2) | ± 0.13·(result + 23) | 53% | 0.70 |
+| Will | 0.34·CHA + 0.93·CR + 13.1  (solo -6.9) | ± 0.14·(result + 23) | 54% | 0.68 |
+| attack | 1.1·CR + 9.5  (solo -8.5) | ± 0.19·(result + 16) | 57% | 0.64 |
+| damage | 0.83·CR + 8.2  (solo -3.3) | ± 0.21·(result + 12) | 64% | 0.55 |
+| STR | 0.83·STR + 6.1  (elite -1.4, solo -4.1) | ± 0.13·(result + 19) | 61% | 0.62 |
+| DEX | 0.7·DEX + 6.4  (solo +4.6) | ± 0.16·(result + 16) | 84% | 0.27 |
+| CON | 0.77·CON + 5.7  (solo -1.7) | ± 0.12·(result + 18) | 71% | 0.45 |
+| INT | 0.96·INT + 0.1 | ± 0.2·(result + 10) | 49% | 0.73 |
+| WIS | 0.33·WIS + 0.13·CR + 9.6 | ± 0.14·(result + 14) | 86% | 0.21 |
+| CHA | 0.91·CHA + 3.5  (solo -4.1) | ± 0.19·(result + 13) | 70% | 0.47 |

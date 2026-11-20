@@ -5,8 +5,9 @@ import sys
 import numpy as np
 import pytest
 
-from models.fit_models import (DEFAULT_DESIGN, MODEL_SPECS, extract, feature_value, role_flags,
-                               role_tier, rule_pairs, source_target)
+from models.fit_models import (DEFAULT_DESIGN, MODEL_SPECS, LinearDesign, extract,
+                               feature_value, role_flags, role_tier, rule_pairs, source_target,
+                               weighted_median)
 from pipeline.datasets import ROOT, load_pairs
 
 sys.path.insert(0, str(ROOT / "app"))
@@ -21,10 +22,10 @@ def test_app_matches_fitter(spec):
 
     src, tgt = source_target(spec)
     pairs = rule_pairs(load_pairs("surrogate"), spec)
-    X, y, *_ = extract(pairs, src, tgt, features, spec["target"])
+    X, y, _, same = extract(pairs, src, tgt, features, spec["target"])
     fitted = DEFAULT_DESIGN()
     fitted.features = features
-    fitted.fit(X, y)
+    fitted.fit(X, y, same)
     pred = fitted.predict(X)
     lo, hi = fitted.bounds(pred, model["conformal_quantile"])
 
@@ -59,3 +60,16 @@ def test_role_flags_and_interactions():
                               {"role_solo": 1.0, "cr_num": "4"}) == {"role_solo*cr_num": 4.0,
                                                                      "cr_num": 4.0}
     assert app.feature_values(["role_solo*cr_num"], {"role_solo": 1.0, "cr_num": None}) is None
+
+
+def test_related_weight_and_weighted_median():
+    assert weighted_median([1, 2, 3, 100], [1, 1, 1, 1]) == 2
+    assert weighted_median([1, 2, 3, 100], [1, 1, 1, 10]) == 100
+    X = np.array([[0.0], [1.0], [2.0], [3.0]])
+    y = np.array([0.0, 1.0, 2.0, 30.0])
+    same = np.array([True, True, True, False])
+    for fit in ("ols", "huber"):
+        m = LinearDesign(fit=fit, related_weight=0.0)
+        m.features = ["x"]
+        m.fit(X, y, same)  # the related outlier is left out: exact line
+        assert np.allclose([m.intercept_, *m.coef_], [0.0, 1.0], atol=1e-3)

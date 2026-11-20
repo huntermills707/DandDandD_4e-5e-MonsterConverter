@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
-from sklearn.linear_model import LinearRegression, RidgeCV
+from sklearn.linear_model import HuberRegressor, LinearRegression, RidgeCV
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -82,15 +82,26 @@ def role_flags(role):
     return {w for w in ROLE_TIERS + COMBAT_ROLES + ("skirmisher", "leader") if w in r}
 
 
+def weighted_median(x, w):
+    """Smallest x with at least half the total weight at or below it."""
+    order = np.argsort(x, kind="stable")
+    cum = np.cumsum(np.asarray(w, dtype=float)[order])
+    return float(np.asarray(x)[order][np.searchsorted(cum, cum[-1] / 2)])
+
+
 class LinearDesign:
     """A linear model in (optionally) transformed space.
 
         z    = intercept + sum(coef_k * t_k(x_k))     t_k = log1p or identity
         pred = inverse_target(z)                       log -> expm1(z)
 
-    fit:      "nonneg" (coefficients and intercept >= 0), "ols", or "ridge"
+    fit:      "nonneg" (coefficients and intercept >= 0), "ols", "ridge"
               (standardized features, penalty by efficient leave-one-out;
-              coefficients reported back in original units)
+              coefficients reported back in original units), or "huber"
+              (squared loss for small residuals, absolute for large ones:
+              a few odd monsters can't drag the rule; epsilon 1.35)
+    related_weight: training weight of related (not same-creature) pairs;
+              fit(X, y, same) takes the same-creature mask
     interval: "relative" [pred(1-q), pred(1+q)], "absolute" [pred-q, pred+q],
               "log" [expm1(z-q), expm1(z+q)] (multiplicative), or "scaled"
               pred +- q(|pred| + c) with c = median |target| in training:
@@ -98,15 +109,16 @@ class LinearDesign:
     """
 
     def __init__(self, name="nonneg_linear", fit="nonneg", interval="relative",
-                 log_target=False, log_features=(), clip_min=0.0, round_sig=None):
+                 log_target=False, log_features=(), clip_min=0.0, round_sig=None,
+                 related_weight=1.0):
         self.name, self.fit_kind, self.interval = name, fit, interval
-        self.round_sig = round_sig
+        self.round_sig, self.related_weight = round_sig, related_weight
         self.log_target, self.log_features, self.clip_min = log_target, set(log_features), clip_min
         self.features = None
 
     def __call__(self):  # acts as its own factory: make_model() -> fresh copy
         d = LinearDesign(self.name, self.fit_kind, self.interval, self.log_target,
-                         self.log_features, self.clip_min, self.round_sig)
+                         self.log_features, self.clip_min, self.round_sig, self.related_weight)
         d.features = self.features
         return d
 
@@ -117,14 +129,27 @@ class LinearDesign:
                 X[:, k] = np.log1p(np.maximum(X[:, k], 0))
         return X
 
-    def fit(self, X, y):
+    def fit(self, X, y, same=None):
+        """same: same-creature mask (None = all); related pairs get
+        `related_weight`, and weight 0 leaves them out."""
         self.scale_offset_ = float(np.median(np.abs(y)))
         if self.round_sig:
             self.scale_offset_ = float(f"{self.scale_offset_:.2g}")
+        w = np.ones(len(y)) if same is None else np.where(same, 1.0, self.related_weight)
+        keep = w > 0
+        X, y, w = np.asarray(X)[keep], np.asarray(y)[keep], w[keep]
         Xt = self._tx(X)
         yt = np.log1p(np.maximum(y, 0)) if self.log_target else y
+        robust = self.fit_kind == "huber"
         if Xt.shape[1] == 0:  # intercept-only rule: the typical value
-            self.intercept_, self.coef_ = float(np.mean(yt)), np.zeros(0)
+            center = weighted_median(yt, w) if robust else np.average(yt, weights=w)
+            self.intercept_, self.coef_ = float(center), np.zeros(0)
+        elif robust:
+            sd = Xt.std(axis=0)
+            sd[sd == 0] = 1.0
+            m = HuberRegressor(epsilon=1.35, alpha=0.0, max_iter=1000)
+            m.fit(Xt / sd, yt, sample_weight=w)
+            self.intercept_, self.coef_ = float(m.intercept_), m.coef_ / sd
         elif self.fit_kind == "nonneg":
             m = LinearRegression(fit_intercept=False, positive=True)
             m.fit(np.column_stack([np.ones(len(Xt)), Xt]), yt)
@@ -137,13 +162,16 @@ class LinearDesign:
             self.intercept_ = float(m.intercept_ - (mu / sd) @ m.coef_)
             self.alpha_ = float(m.alpha_)
         else:
-            m = LinearRegression().fit(Xt, yt)
+            m = LinearRegression().fit(Xt, yt, sample_weight=w)
             self.intercept_, self.coef_ = float(m.intercept_), m.coef_
         if self.round_sig:
             # hand-usable equation: coefficients to `round_sig` significant
-            # figures, then the intercept refit for them and rounded to 0.1
+            # figures, then the intercept refit for them (weighted median
+            # for huber, mean otherwise) and rounded to 0.1
             self.coef_ = np.array([float(f"{c:.{self.round_sig}g}") for c in self.coef_])
-            self.intercept_ = round(float(np.mean(yt - Xt @ self.coef_)), 1)
+            r = yt - Xt @ self.coef_
+            center = weighted_median(r, w) if robust else np.average(r, weights=w)
+            self.intercept_ = round(float(center), 1)
         return self
 
     def link(self, X):
@@ -178,7 +206,7 @@ class LinearDesign:
 
     def describe(self):
         return {"estimator": self.name, "fit": self.fit_kind, "interval": self.interval,
-                "round_sig": self.round_sig,
+                "round_sig": self.round_sig, "related_weight": self.related_weight,
                 "log_target": self.log_target,
                 "log_features": sorted(self.log_features & set(self.features)),
                 "clip_min": self.clip_min,
@@ -189,19 +217,25 @@ NonNegLinear = LinearDesign()  # the original design
 
 # Chosen design (models/experiments.py, D9), picked for being easy to apply
 # by hand at no measurable cost in accuracy: counterpart stat + level/CR +
-# 4e role adjustments, least squares, coefficients rounded to 2 significant
-# figures, interval  result +- q * (result + c).
+# 4e role adjustments, coefficients rounded to 2 significant figures,
+# interval  result +- q * (result + c). Fit with Huber loss, related pairs at
+# half weight (experiments.py --loss, nested CV: median error 60% -> 55% of
+# baseline, 23 fields better, 2 worse): a few odd monsters no longer drag a
+# rule, and variants count less than the same creature.
 ROLE_FEATURES = ["role_minion", "role_elite", "role_solo"]
-DEFAULT_DESIGN = LinearDesign("explainable", fit="ols", interval="scaled", round_sig=2)
+DEFAULT_DESIGN = LinearDesign("explainable", fit="huber", interval="scaled", round_sig=2,
+                              related_weight=0.5)
 
 # Role interactions offered to the backward selection, by (direction, target).
-# 4e multiplies elite HP by 2 and solo HP by 4, so the role bonus on 4e HP
-# grows with level: a slope on CR rather than a flat bonus (nested CV: error
-# 39% -> 29% of baseline). 4e's other role adjustments are flat (+2 to
-# defenses and so on), and neither tier slopes elsewhere nor combat roles
-# (brute, lurker, ...) improved held-out error (models/experiments.py
-# --interactions), so they are not offered.
-INTERACTIONS = {("5e_to_4e", "hp"): ["role_elite*cr_num", "role_solo*cr_num"]}
+# A slope replaces its tier's flat bonus. 4e multiplies solo HP by 4, so the
+# solo bonus on 4e HP is proportional to level: a slope on CR, zero at CR 0.
+# (Slope plus flat bonus fits a little better but goes negative below CR 5,
+# outside the data's solos, CR 6-30.) An elite slope was never selected; 4e's
+# other role adjustments are flat (+2 to defenses and so on), and neither
+# tier slopes elsewhere nor combat roles (brute, lurker, ...) improved
+# held-out error (models/experiments.py --interactions), so they are not
+# offered.
+INTERACTIONS = {("5e_to_4e", "hp"): ["role_solo*cr_num"]}
 
 # Stats 4e fixes by role tier rather than scale: every minion has 1 HP. Those
 # pairs are left out of the rule's fit, and the rule returns the fixed value.
@@ -221,11 +255,14 @@ def rule_pairs(pairs, spec):
 
 
 def candidate_features(spec, role_features=ROLE_FEATURES):
-    """Counterpart + scale, role tiers (minus fixed ones), and interactions."""
+    """Counterpart + scale, role tiers (minus fixed ones and those replaced
+    by a slope), and interactions."""
     key = (spec["direction"], spec["target"])
     fixed = FIXED_BY_ROLE.get(key, {})
-    return (spec["features"] + [f for f in role_features if f[5:] not in fixed]
-            + INTERACTIONS.get(key, []))
+    slopes = INTERACTIONS.get(key, [])
+    sloped = {f.split("*")[0] for f in slopes}
+    return (spec["features"]
+            + [f for f in role_features if f[5:] not in fixed and f not in sloped] + slopes)
 
 
 def feature_value(pair, source_prefix, feature):
@@ -277,11 +314,12 @@ def conformal_q(rel_residuals, alpha):
     return float(np.quantile(rel_residuals, level, method="higher"))
 
 
-def oof_predictions(X, y, groups, make_model, n_folds, seed):
+def oof_predictions(X, y, groups, make_model, n_folds, seed, is_same=None):
     pred = np.empty_like(y)
+    same = np.ones(len(y), dtype=bool) if is_same is None else is_same
     for test in grouped_folds(groups, n_folds, seed):
         train = np.setdiff1d(np.arange(len(y)), test)
-        pred[test] = make_model().fit(X[train], y[train]).predict(X[test])
+        pred[test] = make_model().fit(X[train], y[train], same[train]).predict(X[test])
     return pred
 
 
@@ -301,12 +339,12 @@ def cross_validate(X, y, groups, is_same, make_model, alpha=ALPHA,
         hi = np.empty_like(y)
         for f, test in enumerate(grouped_folds(groups, n_folds, seed)):
             train = np.setdiff1d(np.arange(len(y)), test)
-            model = make_model().fit(X[train], y[train])
+            model = make_model().fit(X[train], y[train], is_same[train])
             pred[test] = model.predict(X[test])
             base[test] = y[train].mean()
             # nested: interval width chosen on the training folds only
             inner = oof_predictions(X[train], y[train], groups[train], make_model,
-                                    n_folds, seed * 31 + f)
+                                    n_folds, seed * 31 + f, is_same[train])
             q = conformal_q(model.residual(y[train], inner), alpha)
             lo[test], hi[test] = model.bounds(pred[test], q)
         oof_preds.append(pred)
@@ -331,7 +369,7 @@ def cv_mae(X, y, groups, is_same, make_model, n_repeats=3, n_folds=N_FOLDS, seed
     """Mean held-out MAE on same-creature pairs (light CV for selection)."""
     out = []
     for rep in range(n_repeats):
-        pred = oof_predictions(X, y, groups, make_model, n_folds, seed + rep)
+        pred = oof_predictions(X, y, groups, make_model, n_folds, seed + rep, is_same)
         out.append(np.abs(y - pred)[is_same].mean())
     return float(np.mean(out))
 
@@ -368,7 +406,7 @@ def select_features(pairs, spec, make_model, counterparts, extras=(), tol=0.01,
 
     while True:
         X, y, g, same, model = data(features)
-        model.fit(X, y)
+        model.fit(X, y, same)
         neg = [f for f, c in zip(features, model.coef_) if f in counterparts and c < 0]
         if not neg:
             break
@@ -406,7 +444,7 @@ def fit_spec(pairs, spec, make_model=NonNegLinear, alpha=ALPHA,
         return None
 
     per, oof_preds = cross_validate(X, y, groups, is_same, make_model, alpha, n_folds, n_repeats)
-    final = make_model().fit(X, y)
+    final = make_model().fit(X, y, is_same)
     oof_resid = np.concatenate([final.residual(y, pred) for pred in oof_preds])
 
     def stat(k, nd=3):
@@ -461,9 +499,9 @@ def num(x):
 
 
 def equation_string(model):
-    """e.g. 'HP = 0.84·HP + 44  (elite +140, solo +31·CR; minion = 1)'.
+    """e.g. 'HP = 0.87·HP + 39  (elite +140, solo +26·CR; minion = 1)'.
     Role adjustments are grouped by role: a flat bonus, a slope
-    ("role_solo*cr_num" -> "solo +31·CR"), or a fixed value."""
+    ("role_solo*cr_num" -> "solo +26·CR"), or a fixed value."""
     terms, roles = [], {}
 
     def term(c, label, lead):

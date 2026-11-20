@@ -137,7 +137,7 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
    - **Design goal: easy, explainable conversion.** Each stat converts by
      a short rule a GM can apply by hand — the matching stat in the other
      edition, the level/CR scale, and 4e role adjustments — e.g.
-     *5e HP = 0.18·HP + 4.7·level − 2 (solo +72)*. All rules are listed in
+     *5e HP = 0.16·HP + 5.6·level − 7.1 (solo +84)*. All rules are listed in
      [`models/conversion_rules.md`](models/conversion_rules.md).
    - **How the rules were chosen** (`models/experiments.py`, all under the
      same grouped CV): adding **4e role** (minion / elite / solo; for
@@ -147,19 +147,33 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
      rounding coefficients to 2 significant figures, cost nothing
      measurable. Terms are then pruned: a counterpart stat with a negative
      coefficient is dropped, and any term whose removal raises CV error by
-     under 1% goes (nested CV: median 59.8% → 60.2%). Log-scale HP/damage,
-     ridge, and the original non-negative constraint did no better.
+     under 1% goes (nested CV, current design: median 55.9% unpruned →
+     55.4% pruned). Log-scale HP/damage, ridge, and the original
+     non-negative constraint did no better.
+   - **Fitting loss and related pairs** (`models/experiments.py --loss`,
+     nested CV): rules are fit with **Huber loss**, which is squared for
+     small misses and absolute for large ones, so a few unusual monsters
+     can't drag a rule. **Related pairs** (a 4e variant matched to its 5e
+     base creature) count at **half weight**: they are noisier targets than
+     the same creature. Together these cut median error from 60.2% to
+     55.4% of the baseline (mean 65.2% → 61.4%), better on 23 fields and
+     worse on 2 (4e→5e HP and INT, by 2–3%). Each alone gets about half of
+     that. Same-creature-only training or a quarter weight do about as well
+     (55.0–55.9%); half weight is the middle choice.
    - **Role interactions** (`models/experiments.py --interactions`, nested
      CV): 4e multiplies solo HP by 4, so when converting *to* 4e the solo HP
      bonus grows with level. A solo × CR slope replaces the flat bonus
-     (*4e HP = 0.83·HP + 50.5, elite +130, solo +31·CR*), cutting 5e→4e HP
-     error from 39% to 29% of the baseline (R² 0.86 → 0.93). 4e minions
-     always have 1 HP, so that rule returns 1 for minions, and they are left
-     out of its fit. The other candidates were combat roles (brute, lurker,
+     (*4e HP = 0.87·HP + 39, elite +140, solo +26·CR*), cutting 5e→4e HP
+     error from 39% to 29% of the baseline under least squares (26% with
+     the current fit; R² 0.86 → 0.93). The slope replaces the flat bonus
+     rather than adding to it: both together fit slightly better (24%) but
+     give solos a negative bonus below CR 5, outside the data (solo CRs
+     6–30). 4e minions always have 1 HP, so that rule returns 1 for
+     minions, and they are left out of its fit. The other candidates were combat roles (brute, lurker,
      soldier, ... vs. skirmisher), elite/solo slopes on level/CR for every
      stat, and slopes on the counterpart stat. Offered all at once or forward
      one at a time, they help some fields and hurt more (median error
-     60.2% → 59.2–61.2%), mostly by chasing noise in the small 5e
+     60.2% → 59.2–61.2%, least squares), mostly by chasing noise in the small 5e
      saving-throw sets. Minion slopes can't be scored: all 6 minion pairs are
      related, not same-creature.
    - **Not adopted: elite/solo slopes for 4e→5e saves.** They looked
@@ -253,6 +267,7 @@ parser special-casing.
 .venv/bin/python -m models.experiments --fields
 .venv/bin/python -m models.experiments --nested-selection
 .venv/bin/python -m models.experiments --interactions
+.venv/bin/python -m models.experiments --loss
 
 # fit within-edition scaling curves (level/CR -> stat)
 .venv/bin/python models/fit_scale_models.py

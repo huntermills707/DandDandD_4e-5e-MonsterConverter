@@ -10,6 +10,7 @@ Usage:
     .venv/bin/python -m models.experiments [--data real|surrogate] [--fields]
     .venv/bin/python -m models.experiments --nested-selection
     .venv/bin/python -m models.experiments --interactions
+    .venv/bin/python -m models.experiments --loss
 """
 
 import argparse
@@ -142,7 +143,7 @@ def d10(spec):
 DESIGNS = [d0, d2, d7, d8, d9, d10]
 
 
-def nested_ratios(pairs, spec, variants, n_repeats=3, seed=2000):
+def nested_ratios(pairs, spec, variants, n_repeats=3, seed=2000, design=None):
     """Honest held-out error of feature-selection procedures: selection is
     re-run inside each outer training fold. variants: {name: (backward
     pool, forward extras, forward threshold)}. Returns {name: mean MAE /
@@ -150,6 +151,7 @@ def nested_ratios(pairs, spec, variants, n_repeats=3, seed=2000):
     from models.fit_models import (COUNTERPART, DEFAULT_DESIGN, extract, feature_value,
                                    grouped_folds, rule_pairs, select_features, source_target)
 
+    design = design or DEFAULT_DESIGN
     pairs = rule_pairs(pairs, spec)
     src, tgt = source_target(spec)
     full = list(dict.fromkeys(f for pool, extras, _ in variants.values() for f in pool + extras))
@@ -165,14 +167,14 @@ def nested_ratios(pairs, spec, variants, n_repeats=3, seed=2000):
             tr = np.setdiff1d(np.arange(len(y)), test)
             for n, (pool, extras, tol_add) in variants.items():
                 kept, _ = select_features([usable[k] for k in tr], dict(spec, features=pool),
-                                          DEFAULT_DESIGN,
+                                          design,
                                           COUNTERPART[spec["direction"]][spec["target"]],
                                           extras=extras, tol_add=tol_add)
                 kept_count[n].update(kept)
                 idx = [full.index(f) for f in kept]
-                m = DEFAULT_DESIGN()
+                m = design()
                 m.features = kept
-                pred[n][test] = m.fit(X[tr][:, idx], y[tr]).predict(X[test][:, idx])
+                pred[n][test] = m.fit(X[tr][:, idx], y[tr], same[tr]).predict(X[test][:, idx])
             base[test] = y[tr].mean()
         b = np.abs(y - base)[same].mean()
         for n in variants:
@@ -200,7 +202,7 @@ def nested_selection(pairs, n_repeats=3):
                 tr = np.setdiff1d(np.arange(len(y)), test)
                 m = DEFAULT_DESIGN()
                 m.features = full
-                pred[test] = m.fit(X[tr], y[tr]).predict(X[test])
+                pred[test] = m.fit(X[tr], y[tr], same[tr]).predict(X[test])
                 base[test] = y[tr].mean()
             unpruned.append(np.abs(y - pred)[same].mean() / np.abs(y - base)[same].mean())
         pruned, _ = nested_ratios(pairs, spec, {"pruned": (full, [], 0.0)}, n_repeats)
@@ -233,6 +235,51 @@ def interaction_variants(spec):
         "+ everything (backward)": (base + slopes + stat_slopes + combat, [], 0.0),
         "shipped, + combat (forward 3%)": (candidate_features(spec), combat, 0.03),
     }
+
+
+LOSS_DESIGNS = {
+    "least squares (current)": dict(fit="ols"),
+    "least squares, related x0.5": dict(fit="ols", related_weight=0.5),
+    "least squares, same-creature only": dict(fit="ols", related_weight=0.0),
+    "huber": dict(fit="huber"),
+    "huber, related x0.5": dict(fit="huber", related_weight=0.5),
+    "huber, related x0.25": dict(fit="huber", related_weight=0.25),
+}
+
+
+def _loss_job(pairs, n_repeats, job):
+    from models.fit_models import candidate_features
+
+    spec, name = job
+    design = LinearDesign(name, interval="scaled", round_sig=2, **LOSS_DESIGNS[name])
+    r, kept = nested_ratios(pairs, spec, {name: (candidate_features(spec), [], 0.0)},
+                            n_repeats, design=design)
+    return r[name], sum(kept[name].values()) / (5 * n_repeats)
+
+
+def losses(pairs, n_repeats=3):
+    """Nested-CV comparison of the fitting loss and the training weight of
+    related pairs, with term selection re-run inside each outer fold."""
+    names = list(LOSS_DESIGNS)
+    jobs = [(spec, n) for spec in MODEL_SPECS for n in names]
+    with ProcessPoolExecutor() as ex:
+        out = dict(zip(((f"{s['direction']}/{s['target']}", n) for s, n in jobs),
+                       ex.map(partial(_loss_job, pairs, n_repeats), jobs)))
+    keys = [f"{s['direction']}/{s['target']}" for s in MODEL_SPECS]
+    prev = [out[(k, names[0])][0] for k in keys]
+    print(f"{'design':34s} {'median':>7s} {'mean':>6s} {'terms':>6s}  fields better/worse >1%")
+    for n in names:
+        v = [out[(k, n)][0] for k in keys]
+        print(f"{n:34s} {np.median(v):7.3f} {np.mean(v):6.3f} "
+              f"{np.mean([out[(k, n)][1] for k in keys]):6.2f}  "
+              f"{sum(a < b * 0.99 for a, b in zip(v, prev)):2d}/"
+              f"{sum(a > b * 1.01 for a, b in zip(v, prev)):<2d}")
+    print(f"\n{'field (MAE / baseline)':26s} " + " ".join(f"{k:>6d}" for k in range(len(names))))
+    for k in keys:
+        row = [out[(k, n)][0] for n in names]
+        best = int(np.argmin(row))
+        print(f"{k:26s} " + " ".join(f"{v:5.3f}{'*' if i == best else ' '}"
+                                     for i, v in enumerate(row)))
 
 
 def _interaction_job(pairs, n_repeats, spec):
@@ -281,11 +328,16 @@ def main(argv=None):
                     help="honest cost of feature pruning (selection inside each fold)")
     ap.add_argument("--interactions", action="store_true",
                     help="role/interaction candidate pools under nested CV")
+    ap.add_argument("--loss", action="store_true",
+                    help="fitting loss and related-pair weight under nested CV")
     args = ap.parse_args(argv)
     pairs = load_pairs(resolve_source(args.data))
 
     if args.interactions:
         interactions(pairs)
+        return
+    if args.loss:
+        losses(pairs)
         return
 
     if args.nested_selection:
