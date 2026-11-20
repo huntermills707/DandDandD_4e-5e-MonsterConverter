@@ -301,7 +301,7 @@ def main(txt_path, out_path, index_path=None):
 
     recovered, repaired = fix_names(monsters, pages, index)
 
-    override_path = "manual/overrides_5e.json"
+    override_path = "manual/local/overrides_5e.json"
     n_overrides = 0
     if os.path.exists(override_path):
         from parsers.overrides import apply_overrides

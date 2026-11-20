@@ -6,8 +6,10 @@ prediction gives per-prediction intervals with a nominal coverage level
 (default 90%).  Results are saved to models/models.json for the Dash app.
 """
 
+import argparse
 import json
 import math
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -15,9 +17,10 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, r2_score
 
 ROOT = Path(__file__).resolve().parent.parent
-TRAINING_PATH = ROOT / "data" / "processed" / "training_pairs.jsonl"
-MODELS_PATH = ROOT / "models" / "models.json"
-REPORT_PATH = ROOT / "models" / "eval_report.json"
+sys.path.insert(0, str(ROOT))
+from pipeline.datasets import SOURCES, load_pairs, resolve_source  # noqa: E402
+
+MODELS_DIR = ROOT / "models"
 
 ALPHA = 0.20  # nominal miscoverage; 80% scale-adaptive prediction intervals
 
@@ -56,11 +59,6 @@ MODEL_SPECS = [
     {"direction": "5e_to_4e", "target": "ability_wis", "features": ["ability_wis", "cr_num"]},
     {"direction": "5e_to_4e", "target": "ability_cha", "features": ["ability_cha", "cr_num"]},
 ]
-
-
-def load_pairs():
-    with open(TRAINING_PATH, encoding="utf-8") as f:
-        return [json.loads(line) for line in f]
 
 
 def source_target(spec):
@@ -185,8 +183,16 @@ def equation_string(model):
     return f"{target} = {eq} {sign} {abs(inter):.4f}"
 
 
-def main():
-    pairs = load_pairs()
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--data", choices=SOURCES, default="auto",
+                        help="real local data, tracked surrogate, or auto (real if present)")
+    parser.add_argument("--out-dir", type=Path, default=MODELS_DIR)
+    args = parser.parse_args(argv)
+
+    source = resolve_source(args.data)
+    print(f"Data source: {source}")
+    pairs = load_pairs(source)
     models = {}
     for spec in MODEL_SPECS:
         key = f"{spec['direction']}/{spec['target']}"
@@ -199,12 +205,11 @@ def main():
         print(f"{key}: R²={result['r2']}, MAE={result['mae']}, "
               f"coverage={result['test_coverage']}, q_rel={result['conformal_quantile_relative']}")
 
-    MODELS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(MODELS_PATH, "w", encoding="utf-8") as f:
-        json.dump(models, f, indent=2)
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
-        json.dump(models, f, indent=2)
-    print(f"\nWrote {MODELS_PATH}")
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    for name in ("models.json", "eval_report.json"):
+        with open(args.out_dir / name, "w", encoding="utf-8") as f:
+            json.dump(models, f, indent=2)
+    print(f"\nWrote {args.out_dir / 'models.json'}")
 
 
 if __name__ == "__main__":

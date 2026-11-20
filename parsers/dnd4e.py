@@ -386,7 +386,7 @@ def main(txt_path, out_path):
     monsters = [m for _, _, m in blocks if len(m) > 3]
     dropped = len(blocks) - len(monsters)
 
-    override_path = "manual/overrides_4e.json"
+    override_path = "manual/local/overrides_4e.json"
     n_overrides = 0
     if os.path.exists(override_path):
         from parsers.overrides import apply_overrides

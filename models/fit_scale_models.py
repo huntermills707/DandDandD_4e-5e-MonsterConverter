@@ -12,6 +12,7 @@ HP and damage grow multiplicatively in both editions; everything else is
 treated additively.  Results are saved to models/scale_models.json.
 """
 
+import argparse
 import json
 import math
 import sys
@@ -22,12 +23,10 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW_DIR = ROOT / "data" / "raw"
-OUT_PATH = ROOT / "models" / "scale_models.json"
+sys.path.insert(0, str(ROOT))
+from pipeline.datasets import SOURCES, load_sides, resolve_source  # noqa: E402
 
-# Reuse the normalization from the pair builder so field semantics match.
-sys.path.insert(0, str(ROOT / "data" / "processed"))
-from build_pairs import build_side  # noqa: E402
+MODELS_DIR = ROOT / "models"
 
 MIN_N = 30
 
@@ -35,7 +34,6 @@ MULTIPLICATIVE = {"hp", "damage_avg"}
 
 EDITIONS = {
     "4e": {
-        "path": RAW_DIR / "mm4_monsters.jsonl",
         "axis": "level",
         "stats": [
             "hp", "ac", "attack_bonus", "damage_avg",
@@ -45,7 +43,6 @@ EDITIONS = {
         ],
     },
     "5e": {
-        "path": RAW_DIR / "mm5_monsters.jsonl",
         "axis": "cr_num",
         "stats": [
             "hp", "ac", "attack_bonus", "damage_avg",
@@ -56,17 +53,6 @@ EDITIONS = {
         ],
     },
 }
-
-
-def load_clean_sides(path, edition):
-    """Parse raw records to flat sides, dropping unresolved OCR suspects."""
-    with open(path, encoding="utf-8") as f:
-        recs = [json.loads(line) for line in f]
-    sides = [build_side(r, edition) for r in recs]
-    return [
-        s for s in sides
-        if not (s["flags"]["ocr_suspect"] and not s["flags"]["manual_fix"])
-    ]
 
 
 def fit_one(xs, ys, kind):
@@ -94,8 +80,8 @@ def fit_one(xs, ys, kind):
     }
 
 
-def fit_edition(edition, spec):
-    sides = load_clean_sides(spec["path"], edition)
+def fit_edition(edition, spec, source):
+    sides = load_sides(edition, source)
     axis = spec["axis"]
     rows = [s for s in sides if s.get(axis) is not None]
 
@@ -133,15 +119,24 @@ def fit_edition(edition, spec):
     }
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--data", choices=SOURCES, default="auto",
+                        help="real local data, tracked surrogate, or auto (real if present)")
+    parser.add_argument("--out-dir", type=Path, default=MODELS_DIR)
+    args = parser.parse_args(argv)
+
+    source = resolve_source(args.data)
+    print(f"Data source: {source}")
     out = {}
     for edition, spec in EDITIONS.items():
         print(f"{edition}:")
-        out[edition] = fit_edition(edition, spec)
-    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUT_PATH, "w", encoding="utf-8") as f:
+        out[edition] = fit_edition(edition, spec, source)
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = args.out_dir / "scale_models.json"
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2)
-    print(f"\nWrote {OUT_PATH}")
+    print(f"\nWrote {out_path}")
 
 
 if __name__ == "__main__":

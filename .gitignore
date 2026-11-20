@@ -9,3 +9,10 @@ __pycache__/
 *.pyc
 .venv/
 .pytest_cache/
+
+# Hand-authored corrections transcribed from the books - local only.
+# See manual/overrides_*.example.json for the format.
+manual/local/
+
+# Local history/data backups
+backup/

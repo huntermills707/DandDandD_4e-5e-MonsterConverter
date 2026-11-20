@@ -1,0 +1,15 @@
+{
+  "comment": "FORMAT EXAMPLE ONLY - invented monsters. Real corrections live in manual/local/overrides_5e.json (gitignored). Blocks whose names were lost to OCR are matched on stats; 'type_contains' does a case-insensitive substring match on type_line.",
+  "overrides": [
+    {
+      "match": {"cr": "3", "hp": 58, "type_contains": "construct"},
+      "set": {"name": "Example Brass Sentinel"},
+      "note": "name lost to page break; identified by stats"
+    },
+    {
+      "match": {"cr": "1/2", "hp": 19},
+      "drop": true,
+      "note": "scrambled block; stats from two monsters merged"
+    }
+  ]
+}

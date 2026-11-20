@@ -1,0 +1,15 @@
+{
+  "comment": "FORMAT EXAMPLE ONLY - invented monsters. Real corrections are transcribed from the book and live in manual/local/overrides_4e.json (gitignored). Each override must match exactly one parsed block on its 'match' fields; 'set' patches it, 'drop': true removes it, and patched blocks are marked manual_fix.",
+  "overrides": [
+    {
+      "match": {"name": "Example Bog Lurker", "level": 4},
+      "set": {"abilities": {"str": 14, "dex": 16, "wis": 12, "con": 13, "int": 6, "cha": 8}},
+      "note": "ability row lost to layout scramble"
+    },
+    {
+      "match": {"name": "Example Cinder Hound", "level": 7},
+      "set": {"attacks": [{"bonus": 12, "defense": "AC", "damage_dice": "2d6+5"}]},
+      "note": "merged line contaminated attacks with a neighboring block"
+    }
+  ]
+}

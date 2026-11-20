@@ -9,9 +9,12 @@ bonus, damage, level/CR, ...) are mapped with simple, human-readable linear
 regression models. A Dash web app lets users convert their own typed-in
 stats and shows the fitted equations for offline use.
 
-**Legal note:** source PDFs and parsed data stay local and are never
-distributed (see `.gitignore`). The web app only accepts user-typed numeric
-input — it hosts no copyrighted text.
+**Legal note:** source PDFs, extracted text, parsed stat blocks, and
+hand-transcribed corrections stay local and are never distributed (see
+`.gitignore`). What is published is a **surrogate dataset**
+(`data/surrogate/`): the numeric game stats only, with monster names and all
+descriptive text removed and replaced by opaque ids. The web app only accepts
+user-typed numeric input — it hosts no copyrighted text.
 
 ## Project structure
 
@@ -21,14 +24,21 @@ parsers/            edition-specific stat block parsers
     extract_index.py 3-column extraction for the 5e MM stat-block index
     dnd4e.py        4e Monster Manual parser
     dnd5e.py        5e Monster Manual parser (OCR-tolerant)
-    overrides.py    applies manual/overrides_*.json corrections
-manual/             hand-authored per-block corrections (tracked)
+    overrides.py    applies manual/local/overrides_*.json corrections
+manual/
+    overrides_*.example.json  format examples (invented monsters, tracked)
+    local/          real hand-transcribed corrections (local only, gitignored)
+pipeline/
+    build_pairs.py  cross-edition name matching -> training pairs
+    datasets.py     loads real local data or the surrogate (--data flag)
+    make_surrogate.py  writes data/surrogate/ from local real data
 data/
+    surrogate/      masked numeric stats: pairs + per-edition monsters (tracked)
     raw/            extracted PDF text + parsed JSONL (local only, gitignored)
     processed/      matched cross-edition training pairs (local only)
 models/             fitted regression models + evaluation reports
 app/                Dash web apps (edition converter, difficulty scaler)
-tests/              parser and model tests
+tests/              surrogate masking, model reproduction, override tests
 requirements.txt
 ```
 
@@ -62,7 +72,7 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
    page's index entries. Name/CR/HP mismatches against the SRD were
    repaired by content-matching (e.g., a block named "Ancient Red Dragon"
    with Young Red Dragon stats was renamed).
-4. [x] **Matching** — `data/processed/build_pairs.py` normalizes names,
+4. [x] **Matching** — `pipeline/build_pairs.py` normalizes names,
    aligns edition-specific age terms (4e "Elder" ↔ 5e "Ancient"), verifies
    5e stats against the SRD, and promotes obvious variant→base pairs. From
    **479 4e** and **376 5e** reliable records it produced **498 candidate
@@ -97,7 +107,8 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
   datasets were considered and rejected in favor of trusted, full-corpus
   local parsing.
 - **Manual overrides.** Blocks that defeat parsing are corrected by hand
-  in `manual/overrides_*.json` rather than by more parser special-casing;
+  in `manual/local/overrides_*.json` (gitignored; see the `.example.json`
+  files for the format) rather than by more parser special-casing;
   the 5e file now contains 68 corrections plus 5 drops. Patched records
   carry `manual_fix` and are listed in `data/processed/review_*.csv` for
   verification.
@@ -123,7 +134,10 @@ parser special-casing.
 
 ```bash
 # build cross-edition matched pairs (training set + review CSV)
-python3 data/processed/build_pairs.py
+python3 -m pipeline.build_pairs
+
+# refresh the shareable surrogate after re-parsing or re-matching
+.venv/bin/python -m pipeline.make_surrogate
 
 # fit per-field linear models and save equations
 .venv/bin/python models/fit_models.py
@@ -137,3 +151,19 @@ python3 data/processed/build_pairs.py
 # run the Dash difficulty scaler (port 8051)
 .venv/bin/python app/scale_app.py
 ```
+
+### Without the rule books
+
+The fitted models can be rebuilt and audited from the tracked surrogate alone.
+The surrogate keeps record order, so the seeded splits — and every equation —
+come out identical to the fit on the real data (checked by
+`tests/test_reproduce_models.py`):
+
+```bash
+.venv/bin/python models/fit_models.py --data surrogate
+.venv/bin/python models/fit_scale_models.py --data surrogate
+.venv/bin/python -m pytest
+```
+
+`--data auto` (the default) uses the real local data when present and falls
+back to the surrogate otherwise.
