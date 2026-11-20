@@ -1,0 +1,19 @@
+# Cross-edition matching settings, read by pipeline/build_pairs.py.
+# Any key can be overridden on the command line, e.g.
+#   .venv/bin/python -m pipeline.build_pairs --method legacy --cardinality one
+
+# "metadata": ~exact names match; otherwise the metadata model proposes and
+#             a name-similarity threshold decides (pipeline/matcher.py).
+# "legacy":   the original name-only fuzzy matcher (pipeline/matcher_legacy.py).
+method = "metadata"
+
+# How many 4e partners each 5e monster may keep (pipeline/cardinality.py):
+# "many" (no limit), "one" (1-to-1), "elbow" (1-to-N, anchored on the ~exact
+# partner, cut where the score drops by more than elbow_ratio x).
+cardinality = "many"
+elbow_ratio = 2.0
+
+[metadata]
+top_k = 5               # model candidates tried per 4e monster
+name_min_sim = 0.65     # IDF-weighted fuzzy ROUGE-1 recall threshold
+embedding_model = "sentence-transformers/all-MiniLM-L6-v2"

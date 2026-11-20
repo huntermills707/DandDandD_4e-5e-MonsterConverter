@@ -1,0 +1,35 @@
+{
+  "features": [
+    "size_eq",
+    "size_dist",
+    "types_jacc",
+    "moral_eq",
+    "lang_jacc",
+    "lang_both_none",
+    "senses_jacc",
+    "moves_jacc",
+    "skills_jacc",
+    "attacks_jacc",
+    "damage_jacc",
+    "emb_cos",
+    "text_tfidf_cos",
+    "text_emb_cos"
+  ],
+  "coef": [
+    -1.105,
+    -2.7981,
+    1.7995,
+    0.6481,
+    1.784,
+    0.9664,
+    0.4301,
+    1.8644,
+    1.2155,
+    1.8737,
+    2.6887,
+    -0.5237,
+    1.1498,
+    -0.1042
+  ],
+  "intercept": -5.6534
+}

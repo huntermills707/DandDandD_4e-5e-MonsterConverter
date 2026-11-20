@@ -38,6 +38,17 @@ DICE_RE = re.compile(r"(\d+d\d+(?:\s*\+\s*\d+)?)")
 
 # Lines that end a stat block ("X Tactics" / "X Lore" section headings; a
 # trailing "$" so mid-block powers like "Feywild Tactics aura 10" don't match)
+# Non-numeric metadata (used for cross-edition matching, never for modeling).
+ALIGN_RE = re.compile(r"Alignment (.+?)(?=\s+Languages\b|$)")
+LANGS_RE = re.compile(r"Languages (.+)$")
+SKILLS_RE = re.compile(r"^Skills (.+)$")
+SENSES_RE = re.compile(r"Senses Perception \+\d+;?\s*(.*)$")
+SPEED_RE = re.compile(r"^Speed (.+)$")
+POWER_RE = re.compile(
+    r"^(?:[mrcaMRCA] )?([A-Z][^()]{1,40}?) \((?:standard|move|minor|free|immediate|no action)"
+)
+AURA_RE = re.compile(r"^([A-Z][^;]{1,40}?) aura \d+")
+
 STOP_RE = re.compile(r"( Tactics$| Lore$)")
 
 # Standard 4e XP by level (elite x2, solo x5, minion /4)
@@ -97,7 +108,22 @@ def parse_fields(mon: dict, lines) -> None:
     place several fields on one visual line ("HP 97; Bloodied 48 AC 25; ...").
     """
     attacks = []
+    meta = mon.get("meta", {})
     for line in lines:
+        if mm := ALIGN_RE.search(line):
+            meta.setdefault("alignment", mm.group(1).strip())
+        if mm := LANGS_RE.search(line):
+            meta.setdefault("languages", mm.group(1).strip())
+        if mm := SKILLS_RE.match(line):
+            meta.setdefault("skills", mm.group(1).strip())
+        if mm := SENSES_RE.search(line):
+            meta.setdefault("senses", mm.group(1).strip())
+        if mm := SPEED_RE.match(line):
+            meta.setdefault("speed", mm.group(1).strip())
+        if mm := (POWER_RE.match(line) or AURA_RE.match(line)):
+            name = mm.group(1).strip()
+            if name not in meta.setdefault("powers", []):
+                meta["powers"].append(name)
         if "type_line" not in mon and TYPE_RE.match(line):
             mon["type_line"] = XP_RE.sub("", line).strip()
         if xm := XP_RE.search(line):
@@ -126,6 +152,11 @@ def parse_fields(mon: dict, lines) -> None:
             attacks.append(atk)
     if attacks:
         mon.setdefault("attacks", []).extend(attacks)
+    text = " ".join(lines).strip()
+    if text:
+        meta["text"] = (meta.get("text", "") + " " + text).strip()
+    if meta:
+        mon["meta"] = meta
 
 
 def block_end(lines, j):
@@ -189,6 +220,55 @@ def recover_name(lines, level_idx):
     return None
 
 
+def family_heads(lines):
+    """{line index: family} for the doubled running heads ("DEVIL DEVIL")
+    that open each monster family's entry."""
+    heads = {}
+    for k, ln in enumerate(lines):
+        toks = ln.split()
+        half = len(toks) // 2
+        if CAPS_RE.match(ln) and half and len(toks) % 2 == 0 and toks[:half] == toks[half:]:
+            heads[k] = " ".join(toks[:half]).title()
+    return heads
+
+
+def attach_family(blocks, lines, max_lore_words=150):
+    """Give each positioned block its family and the family's intro prose
+    (text between the running head and the family's first stat block)."""
+    heads = family_heads(lines)
+    head_idx = sorted(heads)
+    starts = sorted(a for a, _, _ in blocks if a >= 0)
+    lore = {}
+    for h in head_idx:
+        first = next((a for a in starts if a > h), len(lines))
+        words = []
+        for ln in lines[h + 1 : first]:
+            if CAPS_RE.match(ln):
+                continue
+            words.extend(ln.split())
+            if len(words) >= max_lore_words:
+                break
+        lore[h] = " ".join(words[:max_lore_words]).replace("- ", "")
+    for a, _, mon in blocks:
+        if a < 0:
+            continue
+        prior = [h for h in head_idx if h < a]
+        if not prior:
+            continue
+        family = heads[prior[-1]]
+        # Running heads lost to extraction make a block inherit the previous
+        # family; keep the family only when the block's own name or type
+        # keywords confirm it (e.g. Marilith is "(demon)").
+        own_text = f"{mon.get('name', '')} {mon.get('type_line', '')}".lower()
+        stems = [w.rstrip("s") for w in re.split(r"[\s-]+", family.lower()) if len(w) > 2]
+        if not any(stem in own_text for stem in stems):
+            continue
+        meta = mon.setdefault("meta", {})
+        meta["family"] = family
+        if lore[prior[-1]]:
+            meta["lore"] = lore[prior[-1]]
+
+
 def collect_fragments(lines, spans):
     """Collect orphan fragments: stat-block bodies (starting at a type line)
     that lost their header to a page break."""
@@ -240,9 +320,9 @@ def merge_fragments(blocks, fragments):
         frag_attacks = frag.pop("attacks", [])
         frag.pop("_text", None)
         for k, v in frag.items():
-            if k == "abilities":
-                mon.setdefault("abilities", {}).update(
-                    {a: b for a, b in v.items() if a not in mon.get("abilities", {})}
+            if k in ("abilities", "meta"):
+                mon.setdefault(k, {}).update(
+                    {a: b for a, b in v.items() if a not in mon.get(k, {})}
                 )
             else:
                 mon.setdefault(k, v)
@@ -382,8 +462,10 @@ def main(txt_path, out_path):
         blocks.append((-1, -1, mon))
         n_reheaded += 1
 
+    attach_family(blocks, lines)
+
     # Drop blocks that never gained any stat content (index/sidebar junk)
-    monsters = [m for _, _, m in blocks if len(m) > 3]
+    monsters = [m for _, _, m in blocks if len(m.keys() - {"meta"}) > 3]
     dropped = len(blocks) - len(monsters)
 
     override_path = "manual/local/overrides_4e.json"

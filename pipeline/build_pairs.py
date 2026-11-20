@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 """Build cross-edition matched pairs from parsed 4e and 5e stat blocks.
 
-Outputs:
-    data/processed/matched_pairs.csv   - every candidate pair with a score and
-                                         a review flag.
-    data/processed/training_pairs.jsonl - high-confidence pairs (score >= 0.85,
-                                          no unresolved OCR flags) ready for
-                                          regression modeling.
+Outputs (local only, derived from the books):
+    data/processed/matched_pairs.csv    - accepted pairs plus rejected
+                                          candidates, with tier, metadata
+                                          score/rank, and a review flag.
+    data/processed/training_pairs.jsonl - accepted pairs without unresolved
+                                          OCR problems, for regression.
+    models/match_scorer.json            - the metadata scorer's coefficients
+                                          (tracked; contains no book data).
 
-The matcher uses stdlib only (json, csv, difflib, re).  Names are normalized,
-edition-specific dragon age synonyms are aligned (4e "Elder" == 5e "Ancient"),
-parenthetical edition tags are stripped, and fuzzy matching is gated by token
-overlap and age rules so that different colors/ages of dragon or different
-species of "giant X" are not forced into pairs.
+Matching uses names for evidence and non-numeric metadata as a gate; numeric
+stats are never used, so pair selection cannot favor stat relationships the
+regressions will later fit. See pipeline/matcher.py.
 """
 
 import csv
-import difflib
 import json
 import re
 from pathlib import Path
@@ -31,55 +30,9 @@ PAIRS_CSV = PROC_DIR / "matched_pairs.csv"
 TRAINING_PATH = PROC_DIR / "training_pairs.jsonl"
 SRD_PATH = PROC_DIR / "srd_5e.json"
 SRD_URL = "https://api.open5e.com/v1/monsters/?limit=1000&document__slug=wotc-srd"
-
-# Bases that are too generic to promote via substring matching.
-VARIANT_PROMOTE_BLOCKLIST = {"shadow"}
-
-# Age/size words that are aligned across editions for matching.
-AGE_SYNONYMS = {"elder": "ancient"}  # 4e Elder Dragon -> 5e Ancient Dragon
-
-# Stopwords removed when building the semantic "core" tokens used to decide
-# whether a fuzzy candidate is plausible.  This lets "Giant Rat" match
-# "Diseased Giant Rat" while preventing "Giant Rat" from matching "Giant Goat".
-STOPWORDS = {
-    "the", "a", "an", "of", "and",
-    "young", "adult", "ancient", "elder", "wyrmling", "juvenile",
-    "giant", "swarm", "large", "medium", "small", "tiny", "huge", "gargantuan",
-    "dragon", "dracolich",
-}
-
-# Age tokens that must agree when both names have them.
-AGE_TOKENS = {"young", "adult", "ancient", "elder", "wyrmling", "juvenile"}
-
-
-def normalize(name: str) -> str:
-    """Lowercase, drop parentheticals, drop punctuation/digits, collapse ws."""
-    s = name.lower()
-    s = re.sub(r"\([^)]*\)", "", s)
-    s = re.sub(r"[^\w\s]", " ", s)
-    s = re.sub(r"\d+", "", s)
-    return " ".join(s.split())
-
-
-def edition_normalize(name: str) -> str:
-    """Cross-edition normalization: Elder -> Ancient, etc."""
-    tokens = normalize(name).split()
-    return " ".join(AGE_SYNONYMS.get(t, t) for t in tokens)
-
-
-def core_tokens(name: str) -> set:
-    """Semantic tokens after stripping common modifiers/parentheticals."""
-    return set(edition_normalize(name).split()) - STOPWORDS
-
-
-def age_canon(name: str) -> str:
-    """Return the canonical age word in the name, if any."""
-    tokens = set(normalize(name).split()) & AGE_TOKENS
-    if not tokens:
-        return None
-    age = sorted(tokens)[0]
-    return AGE_SYNONYMS.get(age, age)
-
+SCORER_PATH = ROOT / "models" / "match_scorer.json"
+RUN_PATH = PROC_DIR / "match_run.json"
+CONFIG_PATH = ROOT / "config" / "matching.toml"
 
 def load_srd_reference():
     """Load a local 5e SRD cache; fetch from Open5e if missing."""
@@ -106,19 +59,6 @@ def srd_verified(name: str, cr, hp: int, ref: dict) -> bool:
         return False
     srd = ref[name]
     return str(cr) == str(srd.get("challenge_rating")) and int(hp) == srd.get("hit_points")
-
-
-def is_variant_promotion(name4: str, name5: str, score: float) -> bool:
-    """Promote obvious 4e variant -> 5e base pairs (e.g., Fire Titan -> Fire Giant)."""
-    if score < 0.65:
-        return False
-    n4 = normalize(name4)
-    n5 = normalize(name5)
-    if n5 in VARIANT_PROMOTE_BLOCKLIST:
-        return False
-    # Require the 4e name to start with the 5e base name; this avoids false
-    # matches like "Death Knight" -> "Knight" while catching real variants.
-    return n4.startswith(n5)
 
 
 def parse_cr(cr) -> float:
@@ -245,108 +185,82 @@ def build_side(rec, edition: str):
         }
 
 
-def pair_is_plausible(name4: str, name5: str, score: float) -> bool:
-    """Filters obvious false positives like Black Dragon -> Blue Dragon."""
-    # Very high fuzzy similarity overrides token rules (handles OCR typos).
-    if score >= 0.90:
-        return True
+def load_config(path=CONFIG_PATH, **overrides):
+    """config/matching.toml merged with non-None CLI overrides."""
+    import tomllib
 
-    core4 = core_tokens(name4)
-    core5 = core_tokens(name5)
-    if not core4 or not core5:
-        return score >= 0.80
-
-    # Require semantic overlap; e.g. "Giant Rat" and "Giant Goat" share no
-    # core token, even though their full names are ~0.84 similar.
-    if not (core4 & core5):
-        return False
-
-    # If both names carry an age descriptor, the ages must align
-    # (young->young, adult->adult, elder->ancient, ...).
-    age4 = age_canon(name4)
-    age5 = age_canon(name5)
-    if age4 and age5 and age4 != age5:
-        return False
-
-    return score >= 0.55
+    with open(path, "rb") as f:
+        cfg = tomllib.load(f)
+    cfg.setdefault("metadata", {})
+    for key, value in overrides.items():
+        if value is None:
+            continue
+        if key in ("top_k", "name_min_sim", "embedding_model"):
+            cfg["metadata"][key] = value
+        else:
+            cfg[key] = value
+    if cfg["method"] not in ("metadata", "legacy"):
+        raise ValueError(f"unknown method {cfg['method']!r}")
+    return cfg
 
 
-def match_records(records_4e, records_5e, srd_ref):
-    names5 = [r["name"] for r in records_5e]
-    by_name5 = {r["name"]: r for r in records_5e}
-    by_name4 = {r["name"]: r for r in records_4e}
+def match_records(records_4e, records_5e, srd_ref, cfg):
+    """Run the configured matcher, flag data problems, apply cardinality.
+    Returns (pairs, scorer summary or None)."""
+    from pipeline.cardinality import select
 
-    pairs = []
-    seen = set()
+    scorer = None
+    if cfg["method"] == "legacy":
+        from pipeline.matcher_legacy import match as legacy_match
 
-    def add(name4, name5, sc, reason: str):
-        key = (name4, name5)
-        if key in seen:
-            return
-        seen.add(key)
-        r4 = by_name4[name4]
-        r5 = by_name5[name5]
-        s4 = build_side(r4, "4e")
-        s5 = build_side(r5, "5e")
+        accepted, rejected = legacy_match([r["name"] for r in records_4e],
+                                          [r["name"] for r in records_5e])
+    else:
+        from pipeline.matcher import match, scorer_summary
+        from pipeline.metadata import profile_4e, profile_5e
 
+        meta = cfg["metadata"]
+        accepted, rejected, model = match(
+            [profile_4e(r) for r in records_4e], [profile_5e(r) for r in records_5e],
+            top_k=meta["top_k"], name_min_sim=meta["name_min_sim"],
+            model_name=meta["embedding_model"])
+        scorer = scorer_summary(model)
+
+    def data_problem(m):
+        s4 = build_side(records_4e[m["i4"]], "4e")
+        s5 = build_side(records_5e[m["i5"]], "5e")
         unresolved_4e = s4["flags"]["ocr_suspect"] and not s4["flags"]["manual_fix"]
         unresolved_5e = s5["flags"]["ocr_suspect"] and not s5["flags"]["manual_fix"]
-        srd_ok = srd_verified(s5["name"], s5["cr"], s5["hp"], srd_ref)
-        var_prom = is_variant_promotion(s4["name"], s5["name"], sc)
+        # SRD verification lets a 5e block be trusted despite an OCR-suspect
+        # flag from the parser.
+        return (unresolved_4e or unresolved_5e) and not srd_verified(
+            s5["name"], s5["cr"], s5["hp"], srd_ref)
 
-        # SRD verification is used to trust a 5e block despite an OCR-suspect
-        # flag from the parser; it does not bypass the normal score threshold.
-        if (unresolved_4e or unresolved_5e) and not srd_ok:
-            review = True
-        else:
-            review = sc < 0.85 and not var_prom
+    trainable = [m for m in accepted if not data_problem(m)]
+    flagged = [dict(m, note="unresolved OCR") for m in accepted if data_problem(m)]
+    kept, dropped = select(trainable, cfg["cardinality"], cfg["elbow_ratio"])
+    dropped = [dict(m, note=f"dropped by cardinality={cfg['cardinality']}") for m in dropped]
 
+    pairs = []
+    for m, is_accepted, review in ([(m, True, False) for m in kept]
+                                   + [(m, True, True) for m in flagged + dropped]
+                                   + [(m, False, True) for m in rejected]):
         pairs.append({
-            "score": round(sc, 3),
-            "reason": reason,
+            "reason": m["tier"],
+            "match_type": m["match_type"],
+            "score": m["score"],
+            "meta_prob": m["meta_prob"],
+            "meta_rank": m["meta_rank"],
+            "name_sim": m["name_sim"],
+            "accepted": is_accepted,
             "review": review,
-            "4e": s4,
-            "5e": s5,
+            "note": m["note"],
+            "4e": build_side(records_4e[m["i4"]], "4e"),
+            "5e": build_side(records_5e[m["i5"]], "5e"),
         })
-
-    norm4 = {r["name"]: normalize(r["name"]) for r in records_4e}
-    norm5 = {r["name"]: normalize(r["name"]) for r in records_5e}
-    ednorm4 = {r["name"]: edition_normalize(r["name"]) for r in records_4e}
-    ednorm5 = {r["name"]: edition_normalize(r["name"]) for r in records_5e}
-
-    # 1. Exact normalized matches.
-    n5_to_name = {}
-    for r5 in records_5e:
-        n5_to_name.setdefault(normalize(r5["name"]), []).append(r5["name"])
-    for r4 in records_4e:
-        for n5 in n5_to_name.get(normalize(r4["name"]), []):
-            add(r4["name"], n5, 1.0, "exact_normalized")
-
-    # 2. Exact edition-normalized matches (Elder -> Ancient dragons, etc.).
-    edn5_to_name = {}
-    for r5 in records_5e:
-        edn5_to_name.setdefault(edition_normalize(r5["name"]), []).append(r5["name"])
-    for r4 in records_4e:
-        for n5 in edn5_to_name.get(edition_normalize(r4["name"]), []):
-            if normalize(r4["name"]) == normalize(n5):
-                continue  # already exact
-            sc = difflib.SequenceMatcher(None, r4["name"], n5).ratio()
-            add(r4["name"], n5, max(sc, 0.99), "exact_edition_normalized")
-
-    # 3. Fuzzy forward scan, gated by core-token and age rules.
-    for r4 in records_4e:
-        n4 = r4["name"]
-        for n5 in names5:
-            if n5 in by_name5 and normalize(n5) == normalize(n4):
-                continue
-            sc = difflib.SequenceMatcher(None, edition_normalize(n4),
-                                         edition_normalize(n5)).ratio()
-            if pair_is_plausible(n4, n5, sc):
-                add(n4, n5, sc, "fuzzy")
-
-    # Sort: high-confidence first, then by score, then names.
+    # Training order feeds the seeded model splits; keep it deterministic.
     pairs.sort(key=lambda p: (p["review"], -p["score"], p["4e"]["name"], p["5e"]["name"]))
-    return pairs
+    return pairs, scorer
 
 
 def flatten(prefix: str, side: dict, flat: dict):
@@ -366,13 +280,15 @@ def write_outputs(pairs):
 
     rows = []
     for p in pairs:
-        row = {"score": p["score"], "reason": p["reason"], "review": p["review"]}
+        row = {k: p[k] for k in ("reason", "match_type", "score", "meta_prob", "meta_rank",
+                                 "name_sim", "accepted", "review", "note")}
         flatten("4e", p["4e"], row)
         flatten("5e", p["5e"], row)
         rows.append(row)
 
     # Logical column order.
-    ordered = ["score", "reason", "review"]
+    ordered = ["reason", "match_type", "score", "meta_prob", "meta_rank", "name_sim",
+               "accepted", "review", "note"]
     ordered += [f"4e_{k}" for k in [
         "name", "level", "role", "hp", "ac", "fort", "ref", "will", "xp",
         "attack_bonus", "damage_avg", "damage_dice",
@@ -408,29 +324,57 @@ def write_outputs(pairs):
     return rows, training
 
 
-def main():
+def main(argv=None):
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Build cross-edition matched pairs.")
+    ap.add_argument("--config", type=Path, default=CONFIG_PATH)
+    ap.add_argument("--method", choices=["metadata", "legacy"])
+    ap.add_argument("--cardinality", choices=["many", "one", "elbow"])
+    ap.add_argument("--elbow-ratio", type=float)
+    ap.add_argument("--top-k", type=int)
+    ap.add_argument("--name-min-sim", type=float)
+    args = ap.parse_args(argv)
+    cfg = load_config(args.config, method=args.method, cardinality=args.cardinality,
+                      elbow_ratio=args.elbow_ratio, top_k=args.top_k,
+                      name_min_sim=args.name_min_sim)
+    print(f"method={cfg['method']} cardinality={cfg['cardinality']}"
+          + (f" elbow_ratio={cfg['elbow_ratio']}" if cfg["cardinality"] == "elbow" else ""))
+
     with open(MM4_PATH) as f:
         records_4e = [json.loads(line) for line in f]
     with open(MM5_PATH) as f:
         records_5e = [json.loads(line) for line in f]
 
     srd_ref = load_srd_reference()
-    pairs = match_records(records_4e, records_5e, srd_ref)
+    pairs, scorer = match_records(records_4e, records_5e, srd_ref, cfg)
     rows, training = write_outputs(pairs)
+    if scorer is not None:
+        with open(SCORER_PATH, "w", encoding="utf-8") as f:
+            json.dump(scorer, f, indent=2)
+    run = {k: cfg[k] for k in ("method", "cardinality", "elbow_ratio")}
+    if cfg["method"] == "metadata":
+        run["metadata"] = cfg["metadata"]
+    run["n_training_pairs"] = len(training)
+    with open(RUN_PATH, "w", encoding="utf-8") as f:
+        json.dump(run, f, indent=2)
+
+    from collections import Counter
 
     total = len(pairs)
-    high = sum(1 for p in pairs if not p["review"])
+    high = len(training)
     review = total - high
-    matched_4e = len({p["4e"]["name"] for p in pairs})
-    matched_5e = len({p["5e"]["name"] for p in pairs})
+    matched_4e = len({p["4e"]["name"] for p in training})
+    matched_5e = len({p["5e"]["name"] for p in training})
 
     print(f"4e records: {len(records_4e)}")
     print(f"5e records: {len(records_5e)}")
     print(f"Candidate pairs: {total}")
     print(f"  High confidence (training set): {high}")
     print(f"  Flagged for review: {review}")
-    print(f"Unique 4e monsters matched: {matched_4e}")
-    print(f"Unique 5e monsters matched: {matched_5e}")
+    print(f"  Training pairs by tier: {dict(Counter(p['reason'] for p in training))}")
+    print(f"Unique 4e monsters in training: {matched_4e}")
+    print(f"Unique 5e monsters in training: {matched_5e}")
     print(f"Wrote {PAIRS_CSV}")
     print(f"Wrote {TRAINING_PATH}")
 

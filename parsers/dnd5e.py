@@ -311,7 +311,10 @@ def main(txt_path, out_path, index_path=None):
     with open(out_path, "w", encoding="utf-8") as f:
         for mon in monsters:
             mon.pop("_line", None)
-            mon.pop("_text", None)
+            text = mon.pop("_text", None)
+            if text:
+                # block text kept for cross-edition matching (local only)
+                mon["meta"] = {"text": text}
             f.write(json.dumps(mon, ensure_ascii=False) + "\n")
 
     core = {"name", "ac", "hp", "abilities", "cr", "xp"}

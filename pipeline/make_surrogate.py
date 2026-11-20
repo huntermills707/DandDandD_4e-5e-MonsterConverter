@@ -59,12 +59,19 @@ def main():
     masked_pairs = [
         {
             "id": f"pair-{i:04d}",
+            # fixed vocabularies from pipeline/matcher.py, no names
+            "reason": p["reason"],
+            "match_type": p["match_type"],
             "4e": mask(p["4e"], "4e", f"pair-{i:04d}/4e"),
             "5e": mask(p["5e"], "5e", f"pair-{i:04d}/5e"),
         }
         for i, p in enumerate(pairs, start=1)
     ]
     write_jsonl(SURROGATE_PAIRS, masked_pairs)
+    # matching settings that produced these pairs (no book data)
+    run_path = SURROGATE_DIR.parent / "processed" / "match_run.json"
+    if run_path.exists():
+        (SURROGATE_DIR / "match_config.json").write_text(run_path.read_text())
     print(f"Wrote {len(masked_pairs)} pairs -> {SURROGATE_PAIRS.relative_to(SURROGATE_DIR.parent.parent)}")
 
     for edition, path in SURROGATE_SIDES.items():

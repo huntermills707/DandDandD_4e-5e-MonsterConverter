@@ -33,6 +33,11 @@ def apply_overrides(monsters, path):
         if drop:
             monsters.remove(hit)
         else:
+            if "attacks" in patch:
+                # attacks were contaminated by a neighboring block, so the
+                # block's raw text is too; don't let it feed matching
+                hit.pop("_text", None)
+                hit.get("meta", {}).pop("text", None)
             hit.update(patch)
             hit["manual_fix"] = ov.get("note", True)
         applied += 1

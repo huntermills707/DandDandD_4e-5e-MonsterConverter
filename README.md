@@ -28,8 +28,17 @@ parsers/            edition-specific stat block parsers
 manual/
     overrides_*.example.json  format examples (invented monsters, tracked)
     local/          real hand-transcribed corrections (local only, gitignored)
+config/
+    matching.toml   matching method, cardinality, thresholds
 pipeline/
-    build_pairs.py  cross-edition name matching -> training pairs
+    build_pairs.py  cross-edition matching -> training pairs + review CSV
+    matcher_legacy.py  original name-only matcher (method = "legacy")
+    cardinality.py  partners per 5e monster: many / one / elbow
+    compare_matching.py  scores every configuration on a shared test set
+    metadata.py     edition-neutral non-numeric monster profiles
+    match_features.py  pairwise metadata features + sentence embeddings
+    matcher.py      name tiers gated by the metadata scorer
+    eval_matching.py   name-blind retrieval evaluation of the scorer
     datasets.py     loads real local data or the surrogate (--data flag)
     make_surrogate.py  writes data/surrogate/ from local real data
 data/
@@ -40,6 +49,7 @@ models/             fitted regression models + evaluation reports
 app/                Dash web apps (edition converter, difficulty scaler)
 tests/              surrogate masking, model reproduction, override tests
 requirements.txt
+requirements-match.txt  extra deps for matching (CPU torch, sentence-transformers)
 ```
 
 ## Pipeline
@@ -72,13 +82,54 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
    page's index entries. Name/CR/HP mismatches against the SRD were
    repaired by content-matching (e.g., a block named "Ancient Red Dragon"
    with Young Red Dragon stats was renamed).
-4. [x] **Matching** — `pipeline/build_pairs.py` normalizes names,
-   aligns edition-specific age terms (4e "Elder" ↔ 5e "Ancient"), verifies
-   5e stats against the SRD, and promotes obvious variant→base pairs. From
-   **479 4e** and **376 5e** reliable records it produced **498 candidate
-   pairs**: **117 high-confidence** training pairs and **381 flagged for
-   review**.  290 unique 4e monsters and 184 unique 5e monsters are
-   represented.
+4. [x] **Matching** — `pipeline/build_pairs.py` pairs 4e and 5e
+   monsters using **name evidence gated by non-numeric metadata**; numeric
+   stats are never used, so pair selection can't favor the stat
+   relationships the regressions later fit.
+   - The parsers keep each block's metadata (local only): size/type/keywords,
+     alignment, languages, senses, movement, skills, power and attack names,
+     damage types, block text, and the 4e family header and lore.
+   - **Rule** (`pipeline/matcher.py`): if names are approximately exact
+     (**exact** incl. OCR word splits and 4e "Elder" ↔ 5e "Ancient";
+     **alias** via parenthetical alternate names; **ocr** near-identical
+     spelling) → match as the same creature. Otherwise the **metadata
+     model** proposes its top 5 candidates, and the best-ranked one whose
+     **name similarity** reaches 0.65 is accepted as a related creature
+     ("Horde Ghoul" → "Ghoul", "Fire Titan" → "Fire Giant",
+     "Efreet Karadjin" → "Efreeti"). Dragon ages must agree.
+   - **Metadata model** (`pipeline/match_features.py`): logistic regression
+     over structured agreement, TF-IDF of the masked block text, and a
+     pretrained sentence embedding (`all-MiniLM-L6-v2`, CPU) of a name-free
+     profile, trained on exact-name pairs (coefficients in
+     `models/match_scorer.json`). Name-blind (85 same-name pairs, grouped
+     CV) it ranks the true counterpart first **41%** of the time, top 10
+     **72%**, median rank 3 (chance: 0.3% / 2.7%); misses are mostly
+     siblings (dragon colors, devil types).
+   - **Name similarity** (`pipeline/name_similarity.py`): IDF-weighted fuzzy
+     ROUGE-1 recall — the share of the 5e name's words found in the 4e
+     name, rare words weighted up. Recall suits 4e's "base + extra words"
+     naming, which BLEU's brevity penalty punishes; IDF separates
+     "Ancient Red Dragon" from "Ancient Gold Dragon".
+   - **Chosen on hand labels** (`manual/local/match_labels.csv`, 170
+     candidates): on 79 4e monsters with a correct candidate, ROUGE-1/IDF
+     at 0.65 over the top 5 gives **98% precision, 82% recall**; chrF
+     reaches 91%/81%, BLEU-1 67%/73%; using only the single top candidate
+     drops recall to ~40% (a sibling often outranks the base creature).
+   - **Configurable** (`config/matching.toml`, or CLI flags on
+     `pipeline.build_pairs`): `method` = `metadata` (above) or `legacy`
+     (the original name-only fuzzy matcher, reproduces the first 117 pairs
+     exactly); `cardinality` = how many 4e partners each 5e monster keeps:
+     `many`, `one` (1-to-1, preferring the ~exact partner), or `elbow`
+     (1-to-N: all ~exact anchors, then partners best-first until the score
+     drops by more than `elbow_ratio`x). The settings used are saved with
+     the outputs (`data/surrogate/match_config.json`).
+   - **Comparison** (`pipeline/compare_matching.py`): all six
+     configurations scored on one shared test set (79 same-creature pairs,
+     5 folds grouped by 5e monster, leaking pairs removed from training).
+     They differ in coverage — 97 to 154 pairs — but not in accuracy:
+     median R² 0.42–0.44 and MAE 72–74% of the mean baseline throughout.
+   - Default (`metadata`, `many`): **154 training pairs** (87 same + 67
+     related; 154 unique 4e, 104 unique 5e monsters).
 5. [x] **Modeling** — `models/fit_models.py` fits per-field linear
    regressions in both directions (4e→5e and 5e→4e). Models now cover HP,
    AC, attack bonus, damage average, CR/level, all six ability scores, and
@@ -133,8 +184,16 @@ absorbed a neighbor's stats through merged PDF text lines are flagged in
 parser special-casing.
 
 ```bash
-# build cross-edition matched pairs (training set + review CSV)
-python3 -m pipeline.build_pairs
+# build cross-edition matched pairs (training set + review CSV);
+# needs requirements-match.txt
+.venv/bin/python -m pipeline.build_pairs
+
+# other matching settings (defaults in config/matching.toml)
+.venv/bin/python -m pipeline.build_pairs --method legacy --cardinality one
+
+# name-blind evaluation of the metadata matcher; compare all configurations
+.venv/bin/python -m pipeline.eval_matching
+.venv/bin/python -m pipeline.compare_matching
 
 # refresh the shareable surrogate after re-parsing or re-matching
 .venv/bin/python -m pipeline.make_surrogate

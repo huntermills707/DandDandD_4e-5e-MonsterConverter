@@ -36,7 +36,9 @@ def test_pairs_are_masked():
     pairs = read(SURROGATE_PAIRS)
     assert len(pairs) > 100
     for p in pairs:
-        assert set(p) == {"id", "4e", "5e"}
+        assert set(p) == {"id", "reason", "match_type", "4e", "5e"}
+        assert p["reason"] in {"exact", "alias", "ocr", "model", "fuzzy"}
+        assert p["match_type"] in {"same", "related"}
         check_side(p["4e"], "4e")
         check_side(p["5e"], "5e")
 

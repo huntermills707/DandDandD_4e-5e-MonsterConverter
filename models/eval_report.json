@@ -11,25 +11,25 @@
       "attack_bonus",
       "damage_avg"
     ],
-    "n": 110,
-    "n_train": 66,
-    "n_cal": 22,
-    "n_test": 22,
+    "n": 147,
+    "n_train": 88,
+    "n_cal": 29,
+    "n_test": 30,
     "intercept": 0.0,
     "coef": [
-      0.197576,
-      0.014188,
-      0.030411,
+      0.064722,
+      0.011699,
       0.0,
-      0.052263
+      0.0,
+      0.193591
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.886,
-    "test_coverage": 0.864,
-    "r2": 0.79,
-    "mae": 2.642,
-    "baseline_mae": 5.15,
-    "equation": "CR = 0.1976\u00b7level + 0.0142\u00b7hp + 0.0304\u00b7ac + 0.0000\u00b7atk + 0.0523\u00b7dmg + 0.0000"
+    "conformal_quantile_relative": 0.8465,
+    "test_coverage": 0.767,
+    "r2": 0.758,
+    "mae": 2.742,
+    "baseline_mae": 5.249,
+    "equation": "CR = 0.0647\u00b7level + 0.0117\u00b7hp + 0.0000\u00b7ac + 0.0000\u00b7atk + 0.1936\u00b7dmg + 0.0000"
   },
   "4e_to_5e/hp": {
     "direction": "4e_to_5e",
@@ -42,24 +42,24 @@
       "ac",
       "ability_con"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
     "intercept": 0.0,
     "coef": [
-      0.296293,
-      1.400563,
-      0.298431,
-      1.310111
+      0.318453,
+      1.591063,
+      0.0,
+      0.834597
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.5416,
-    "test_coverage": 0.792,
-    "r2": 0.84,
-    "mae": 40.372,
-    "baseline_mae": 71.845,
-    "equation": "hp = 0.2963\u00b7hp + 1.4006\u00b7level + 0.2984\u00b7ac + 1.3101\u00b7con + 0.0000"
+    "conformal_quantile_relative": 0.6569,
+    "test_coverage": 0.875,
+    "r2": 0.511,
+    "mae": 42.961,
+    "baseline_mae": 68.531,
+    "equation": "hp = 0.3185\u00b7hp + 1.5911\u00b7level + 0.0000\u00b7ac + 0.8346\u00b7con + 0.0000"
   },
   "4e_to_5e/ac": {
     "direction": "4e_to_5e",
@@ -71,23 +71,23 @@
       "level",
       "ability_dex"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 6.7164,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 8.2869,
     "coef": [
-      0.262151,
+      0.222622,
       0.0,
-      0.091957
+      0.052425
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.2666,
-    "test_coverage": 0.917,
-    "r2": 0.535,
-    "mae": 1.566,
-    "baseline_mae": 2.135,
-    "equation": "ac = 0.2622\u00b7ac + 0.0000\u00b7level + 0.0920\u00b7dex + 6.7164"
+    "conformal_quantile_relative": 0.2122,
+    "test_coverage": 0.812,
+    "r2": 0.339,
+    "mae": 1.97,
+    "baseline_mae": 2.428,
+    "equation": "ac = 0.2226\u00b7ac + 0.0000\u00b7level + 0.0524\u00b7dex + 8.2869"
   },
   "4e_to_5e/attack_bonus": {
     "direction": "4e_to_5e",
@@ -100,24 +100,24 @@
       "ability_str",
       "ability_dex"
     ],
-    "n": 99,
-    "n_train": 59,
-    "n_cal": 19,
-    "n_test": 21,
-    "intercept": 0.0,
+    "n": 134,
+    "n_train": 80,
+    "n_cal": 26,
+    "n_test": 28,
+    "intercept": 1.9655,
     "coef": [
       0.0,
-      0.27548,
-      0.127257,
-      0.107831
+      0.212363,
+      0.115603,
+      0.0
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.5204,
-    "test_coverage": 0.81,
-    "r2": 0.515,
-    "mae": 2.061,
-    "baseline_mae": 2.86,
-    "equation": "atk = 0.0000\u00b7atk + 0.2755\u00b7level + 0.1273\u00b7str + 0.1078\u00b7dex + 0.0000"
+    "conformal_quantile_relative": 0.5773,
+    "test_coverage": 0.893,
+    "r2": 0.58,
+    "mae": 1.908,
+    "baseline_mae": 2.812,
+    "equation": "atk = 0.0000\u00b7atk + 0.2124\u00b7level + 0.1156\u00b7str + 0.0000\u00b7dex + 1.9655"
   },
   "4e_to_5e/damage_avg": {
     "direction": "4e_to_5e",
@@ -129,23 +129,23 @@
       "level",
       "ability_str"
     ],
-    "n": 92,
-    "n_train": 55,
-    "n_cal": 18,
-    "n_test": 19,
-    "intercept": 6.7906,
+    "n": 128,
+    "n_train": 76,
+    "n_cal": 25,
+    "n_test": 27,
+    "intercept": 0.9846,
     "coef": [
       0.0,
-      0.50173,
-      0.019447
+      0.297924,
+      0.369256
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.8319,
-    "test_coverage": 1.0,
-    "r2": -0.038,
-    "mae": 4.363,
-    "baseline_mae": 3.646,
-    "equation": "dmg = 0.0000\u00b7dmg + 0.5017\u00b7level + 0.0194\u00b7str + 6.7906"
+    "conformal_quantile_relative": 0.5483,
+    "test_coverage": 0.667,
+    "r2": -0.06,
+    "mae": 4.567,
+    "baseline_mae": 5.011,
+    "equation": "dmg = 0.0000\u00b7dmg + 0.2979\u00b7level + 0.3693\u00b7str + 0.9846"
   },
   "4e_to_5e/ability_str": {
     "direction": "4e_to_5e",
@@ -156,22 +156,22 @@
       "ability_str",
       "level"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 1.0247,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 0.0,
     "coef": [
-      0.774853,
-      0.142306
+      0.917513,
+      0.0
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.2689,
-    "test_coverage": 0.875,
-    "r2": 0.009,
-    "mae": 6.677,
-    "baseline_mae": 7.744,
-    "equation": "str = 0.7749\u00b7str + 0.1423\u00b7level + 1.0247"
+    "conformal_quantile_relative": 0.497,
+    "test_coverage": 0.938,
+    "r2": 0.458,
+    "mae": 3.33,
+    "baseline_mae": 4.521,
+    "equation": "str = 0.9175\u00b7str + 0.0000\u00b7level + 0.0000"
   },
   "4e_to_5e/ability_dex": {
     "direction": "4e_to_5e",
@@ -182,22 +182,22 @@
       "ability_dex",
       "level"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 9.656,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 7.6343,
     "coef": [
-      0.223372,
+      0.301561,
       0.0
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.3161,
-    "test_coverage": 0.917,
-    "r2": 0.128,
-    "mae": 2.41,
-    "baseline_mae": 2.762,
-    "equation": "dex = 0.2234\u00b7dex + 0.0000\u00b7level + 9.6560"
+    "conformal_quantile_relative": 0.2891,
+    "test_coverage": 0.812,
+    "r2": -0.124,
+    "mae": 3.023,
+    "baseline_mae": 2.656,
+    "equation": "dex = 0.3016\u00b7dex + 0.0000\u00b7level + 7.6343"
   },
   "4e_to_5e/ability_con": {
     "direction": "4e_to_5e",
@@ -208,22 +208,22 @@
       "ability_con",
       "level"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 7.2498,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 5.9025,
     "coef": [
-      0.361142,
-      0.248662
+      0.439664,
+      0.17755
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.246,
-    "test_coverage": 0.917,
-    "r2": 0.469,
-    "mae": 2.47,
-    "baseline_mae": 3.158,
-    "equation": "con = 0.3611\u00b7con + 0.2487\u00b7level + 7.2498"
+    "conformal_quantile_relative": 0.2107,
+    "test_coverage": 0.75,
+    "r2": 0.481,
+    "mae": 2.485,
+    "baseline_mae": 3.404,
+    "equation": "con = 0.4397\u00b7con + 0.1776\u00b7level + 5.9025"
   },
   "4e_to_5e/ability_int": {
     "direction": "4e_to_5e",
@@ -234,22 +234,22 @@
       "ability_int",
       "level"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 1.4969,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 2.3635,
     "coef": [
-      0.692342,
-      0.176927
+      0.657085,
+      0.07413
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.5552,
-    "test_coverage": 0.833,
-    "r2": 0.492,
-    "mae": 2.546,
-    "baseline_mae": 3.779,
-    "equation": "int = 0.6923\u00b7int + 0.1769\u00b7level + 1.4969"
+    "conformal_quantile_relative": 0.3624,
+    "test_coverage": 0.875,
+    "r2": 0.86,
+    "mae": 1.759,
+    "baseline_mae": 5.196,
+    "equation": "int = 0.6571\u00b7int + 0.0741\u00b7level + 2.3635"
   },
   "4e_to_5e/ability_wis": {
     "direction": "4e_to_5e",
@@ -260,22 +260,22 @@
       "ability_wis",
       "level"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 6.8404,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 8.5173,
     "coef": [
-      0.289513,
-      0.125942
+      0.134458,
+      0.134246
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.5038,
-    "test_coverage": 1.0,
-    "r2": -0.003,
-    "mae": 1.778,
-    "baseline_mae": 1.877,
-    "equation": "wis = 0.2895\u00b7wis + 0.1259\u00b7level + 6.8404"
+    "conformal_quantile_relative": 0.2828,
+    "test_coverage": 0.812,
+    "r2": 0.135,
+    "mae": 2.309,
+    "baseline_mae": 2.562,
+    "equation": "wis = 0.1345\u00b7wis + 0.1342\u00b7level + 8.5173"
   },
   "4e_to_5e/ability_cha": {
     "direction": "4e_to_5e",
@@ -286,22 +286,22 @@
       "ability_cha",
       "level"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 2.7467,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 3.5492,
     "coef": [
-      0.495069,
-      0.267384
+      0.421545,
+      0.178161
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.6026,
-    "test_coverage": 1.0,
-    "r2": 0.294,
-    "mae": 2.874,
-    "baseline_mae": 3.707,
-    "equation": "cha = 0.4951\u00b7cha + 0.2674\u00b7level + 2.7467"
+    "conformal_quantile_relative": 0.4255,
+    "test_coverage": 0.875,
+    "r2": 0.603,
+    "mae": 2.78,
+    "baseline_mae": 4.781,
+    "equation": "cha = 0.4215\u00b7cha + 0.1782\u00b7level + 3.5492"
   },
   "4e_to_5e/save_dex": {
     "direction": "4e_to_5e",
@@ -313,23 +313,23 @@
       "ability_dex",
       "level"
     ],
-    "n": 30,
+    "n": 31,
     "n_train": 18,
     "n_cal": 6,
-    "n_test": 6,
-    "intercept": 1.8268,
+    "n_test": 7,
+    "intercept": 1.8541,
     "coef": [
       0.0,
-      0.16107,
-      0.074102
+      0.236288,
+      0.00595
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.4247,
-    "test_coverage": 0.667,
-    "r2": -0.622,
-    "mae": 1.048,
-    "baseline_mae": 1.222,
-    "equation": "save_dex = 0.0000\u00b7ref + 0.1611\u00b7dex + 0.0741\u00b7level + 1.8268"
+    "conformal_quantile_relative": 0.4551,
+    "test_coverage": 0.857,
+    "r2": -1.675,
+    "mae": 1.76,
+    "baseline_mae": 1.69,
+    "equation": "save_dex = 0.0000\u00b7ref + 0.2363\u00b7dex + 0.0060\u00b7level + 1.8541"
   },
   "4e_to_5e/save_con": {
     "direction": "4e_to_5e",
@@ -341,23 +341,23 @@
       "ability_con",
       "level"
     ],
-    "n": 29,
-    "n_train": 17,
-    "n_cal": 5,
-    "n_test": 7,
-    "intercept": 2.1595,
+    "n": 33,
+    "n_train": 19,
+    "n_cal": 6,
+    "n_test": 8,
+    "intercept": 1.022,
     "coef": [
-      0.221672,
-      0.0,
-      0.0
+      0.197783,
+      0.056166,
+      0.028962
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 1.114,
-    "test_coverage": 1.0,
-    "r2": 0.548,
-    "mae": 1.808,
-    "baseline_mae": 3.353,
-    "equation": "save_con = 0.2217\u00b7fort + 0.0000\u00b7con + 0.0000\u00b7level + 2.1595"
+    "conformal_quantile_relative": 0.8948,
+    "test_coverage": 0.875,
+    "r2": -0.214,
+    "mae": 3.045,
+    "baseline_mae": 3.599,
+    "equation": "save_con = 0.1978\u00b7fort + 0.0562\u00b7con + 0.0290\u00b7level + 1.0220"
   },
   "4e_to_5e/save_wis": {
     "direction": "4e_to_5e",
@@ -369,23 +369,23 @@
       "ability_wis",
       "level"
     ],
-    "n": 42,
-    "n_train": 25,
-    "n_cal": 8,
-    "n_test": 9,
-    "intercept": 1.2359,
+    "n": 49,
+    "n_train": 29,
+    "n_cal": 9,
+    "n_test": 11,
+    "intercept": 4.2187,
     "coef": [
-      0.080405,
       0.0,
-      0.189171
+      0.0,
+      0.154126
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 1.7342,
+    "conformal_quantile_relative": 0.4464,
     "test_coverage": 1.0,
-    "r2": -0.141,
-    "mae": 1.647,
-    "baseline_mae": 1.302,
-    "equation": "save_wis = 0.0804\u00b7will + 0.0000\u00b7wis + 0.1892\u00b7level + 1.2359"
+    "r2": 0.676,
+    "mae": 1.249,
+    "baseline_mae": 2.408,
+    "equation": "save_wis = 0.0000\u00b7will + 0.0000\u00b7wis + 0.1541\u00b7level + 4.2187"
   },
   "4e_to_5e/save_cha": {
     "direction": "4e_to_5e",
@@ -397,23 +397,23 @@
       "ability_cha",
       "level"
     ],
-    "n": 33,
-    "n_train": 19,
-    "n_cal": 6,
-    "n_test": 8,
-    "intercept": 2.5351,
+    "n": 42,
+    "n_train": 25,
+    "n_cal": 8,
+    "n_test": 9,
+    "intercept": 0.0,
     "coef": [
-      0.082645,
+      0.252236,
       0.0,
-      0.184439
+      0.0
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.5871,
-    "test_coverage": 0.875,
-    "r2": -0.127,
-    "mae": 1.676,
-    "baseline_mae": 1.553,
-    "equation": "save_cha = 0.0826\u00b7will + 0.0000\u00b7cha + 0.1844\u00b7level + 2.5351"
+    "conformal_quantile_relative": 1.3787,
+    "test_coverage": 1.0,
+    "r2": -0.013,
+    "mae": 1.764,
+    "baseline_mae": 1.667,
+    "equation": "save_cha = 0.2522\u00b7will + 0.0000\u00b7cha + 0.0000\u00b7level + 0.0000"
   },
   "5e_to_4e/level": {
     "direction": "5e_to_4e",
@@ -427,25 +427,25 @@
       "attack_bonus",
       "damage_avg"
     ],
-    "n": 99,
-    "n_train": 59,
-    "n_cal": 19,
-    "n_test": 21,
-    "intercept": 6.5809,
+    "n": 134,
+    "n_train": 80,
+    "n_cal": 26,
+    "n_test": 28,
+    "intercept": 6.7448,
     "coef": [
-      0.491702,
-      0.012471,
+      0.471276,
+      0.017474,
       0.0,
       0.0,
-      0.069827
+      0.058293
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.6737,
-    "test_coverage": 0.857,
-    "r2": 0.536,
-    "mae": 3.854,
-    "baseline_mae": 5.612,
-    "equation": "level = 0.4917\u00b7CR + 0.0125\u00b7hp + 0.0000\u00b7ac + 0.0000\u00b7atk + 0.0698\u00b7dmg + 6.5809"
+    "conformal_quantile_relative": 0.6885,
+    "test_coverage": 0.964,
+    "r2": 0.689,
+    "mae": 3.505,
+    "baseline_mae": 5.912,
+    "equation": "level = 0.4713\u00b7CR + 0.0175\u00b7hp + 0.0000\u00b7ac + 0.0000\u00b7atk + 0.0583\u00b7dmg + 6.7448"
   },
   "5e_to_4e/hp": {
     "direction": "5e_to_4e",
@@ -458,24 +458,24 @@
       "ac",
       "ability_con"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
     "intercept": 0.0,
     "coef": [
-      2.256695,
-      0.0,
+      1.804223,
+      7.954066,
       0.0,
       0.0
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.5922,
-    "test_coverage": 0.792,
-    "r2": 0.851,
-    "mae": 94.076,
-    "baseline_mae": 188.411,
-    "equation": "hp = 2.2567\u00b7hp + 0.0000\u00b7CR + 0.0000\u00b7ac + 0.0000\u00b7con + 0.0000"
+    "conformal_quantile_relative": 0.9514,
+    "test_coverage": 0.906,
+    "r2": 0.586,
+    "mae": 119.821,
+    "baseline_mae": 180.792,
+    "equation": "hp = 1.8042\u00b7hp + 7.9541\u00b7CR + 0.0000\u00b7ac + 0.0000\u00b7con + 0.0000"
   },
   "5e_to_4e/ac": {
     "direction": "5e_to_4e",
@@ -487,23 +487,23 @@
       "cr_num",
       "ability_dex"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 18.6913,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 19.659,
     "coef": [
       0.0,
-      0.815988,
-      0.104834
+      0.837883,
+      0.086261
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.2769,
-    "test_coverage": 0.958,
-    "r2": 0.568,
-    "mae": 3.594,
-    "baseline_mae": 5.176,
-    "equation": "ac = 0.0000\u00b7ac + 0.8160\u00b7CR + 0.1048\u00b7dex + 18.6913"
+    "conformal_quantile_relative": 0.2487,
+    "test_coverage": 0.844,
+    "r2": 0.397,
+    "mae": 4.468,
+    "baseline_mae": 6.451,
+    "equation": "ac = 0.0000\u00b7ac + 0.8379\u00b7CR + 0.0863\u00b7dex + 19.6590"
   },
   "5e_to_4e/fort": {
     "direction": "5e_to_4e",
@@ -516,24 +516,24 @@
       "cr_num",
       "hp"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 14.6521,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 14.8124,
     "coef": [
+      0.327275,
       0.0,
-      0.291691,
-      0.422883,
-      0.016232
+      0.491127,
+      0.016548
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.2407,
-    "test_coverage": 0.875,
-    "r2": 0.035,
-    "mae": 5.016,
-    "baseline_mae": 6.139,
-    "equation": "fort = 0.0000\u00b7con + 0.2917\u00b7str + 0.4229\u00b7CR + 0.0162\u00b7hp + 14.6521"
+    "conformal_quantile_relative": 0.3451,
+    "test_coverage": 0.844,
+    "r2": 0.365,
+    "mae": 4.937,
+    "baseline_mae": 7.039,
+    "equation": "fort = 0.3273\u00b7con + 0.0000\u00b7str + 0.4911\u00b7CR + 0.0165\u00b7hp + 14.8124"
   },
   "5e_to_4e/ref": {
     "direction": "5e_to_4e",
@@ -545,23 +545,23 @@
       "cr_num",
       "hp"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 10.1549,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 13.8837,
     "coef": [
-      0.519953,
-      0.430604,
-      0.028379
+      0.323024,
+      0.772991,
+      0.004355
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.3005,
-    "test_coverage": 0.958,
-    "r2": 0.504,
-    "mae": 3.798,
-    "baseline_mae": 4.917,
-    "equation": "ref = 0.5200\u00b7dex + 0.4306\u00b7CR + 0.0284\u00b7hp + 10.1549"
+    "conformal_quantile_relative": 0.2485,
+    "test_coverage": 0.719,
+    "r2": 0.458,
+    "mae": 4.504,
+    "baseline_mae": 6.548,
+    "equation": "ref = 0.3230\u00b7dex + 0.7730\u00b7CR + 0.0044\u00b7hp + 13.8837"
   },
   "5e_to_4e/will": {
     "direction": "5e_to_4e",
@@ -574,24 +574,24 @@
       "cr_num",
       "hp"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 11.6701,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 12.5679,
     "coef": [
-      0.301257,
-      0.245262,
-      0.341698,
-      0.015308
+      0.121835,
+      0.457479,
+      0.562437,
+      0.0
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.36,
-    "test_coverage": 0.958,
-    "r2": 0.449,
-    "mae": 3.999,
-    "baseline_mae": 5.019,
-    "equation": "will = 0.3013\u00b7wis + 0.2453\u00b7cha + 0.3417\u00b7CR + 0.0153\u00b7hp + 11.6701"
+    "conformal_quantile_relative": 0.3605,
+    "test_coverage": 0.844,
+    "r2": 0.387,
+    "mae": 4.697,
+    "baseline_mae": 6.336,
+    "equation": "will = 0.1218\u00b7wis + 0.4575\u00b7cha + 0.5624\u00b7CR + 0.0000\u00b7hp + 12.5679"
   },
   "5e_to_4e/attack_bonus": {
     "direction": "5e_to_4e",
@@ -604,24 +604,24 @@
       "ability_str",
       "ability_dex"
     ],
-    "n": 99,
-    "n_train": 59,
-    "n_cal": 19,
-    "n_test": 21,
-    "intercept": 11.2985,
+    "n": 134,
+    "n_train": 80,
+    "n_cal": 26,
+    "n_test": 28,
+    "intercept": 11.3015,
     "coef": [
       0.0,
-      0.708081,
-      0.003644,
-      0.027358
+      0.702789,
+      0.023705,
+      0.0
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.444,
-    "test_coverage": 0.905,
-    "r2": 0.552,
-    "mae": 3.465,
-    "baseline_mae": 5.247,
-    "equation": "atk = 0.0000\u00b7atk + 0.7081\u00b7CR + 0.0036\u00b7str + 0.0274\u00b7dex + 11.2985"
+    "conformal_quantile_relative": 0.4652,
+    "test_coverage": 0.893,
+    "r2": 0.67,
+    "mae": 3.502,
+    "baseline_mae": 5.703,
+    "equation": "atk = 0.0000\u00b7atk + 0.7028\u00b7CR + 0.0237\u00b7str + 0.0000\u00b7dex + 11.3015"
   },
   "5e_to_4e/damage_avg": {
     "direction": "5e_to_4e",
@@ -633,23 +633,23 @@
       "cr_num",
       "ability_str"
     ],
-    "n": 92,
-    "n_train": 55,
-    "n_cal": 18,
-    "n_test": 19,
-    "intercept": 9.9688,
+    "n": 128,
+    "n_train": 76,
+    "n_cal": 25,
+    "n_test": 27,
+    "intercept": 9.6521,
     "coef": [
       0.0,
-      0.615261,
+      0.719602,
       0.0
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.552,
-    "test_coverage": 0.895,
-    "r2": 0.489,
-    "mae": 5.165,
-    "baseline_mae": 6.832,
-    "equation": "dmg = 0.0000\u00b7dmg + 0.6153\u00b7CR + 0.0000\u00b7str + 9.9688"
+    "conformal_quantile_relative": 0.4317,
+    "test_coverage": 0.778,
+    "r2": 0.39,
+    "mae": 4.058,
+    "baseline_mae": 5.055,
+    "equation": "dmg = 0.0000\u00b7dmg + 0.7196\u00b7CR + 0.0000\u00b7str + 9.6521"
   },
   "5e_to_4e/ability_str": {
     "direction": "5e_to_4e",
@@ -660,22 +660,22 @@
       "ability_str",
       "cr_num"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 6.0342,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 14.2737,
     "coef": [
-      0.723594,
-      0.0
+      0.141715,
+      0.400547
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.2593,
-    "test_coverage": 0.792,
-    "r2": -5.158,
-    "mae": 5.877,
-    "baseline_mae": 4.967,
-    "equation": "str = 0.7236\u00b7str + 0.0000\u00b7CR + 6.0342"
+    "conformal_quantile_relative": 0.3253,
+    "test_coverage": 0.812,
+    "r2": 0.056,
+    "mae": 4.586,
+    "baseline_mae": 5.094,
+    "equation": "str = 0.1417\u00b7str + 0.4005\u00b7CR + 14.2737"
   },
   "5e_to_4e/ability_dex": {
     "direction": "5e_to_4e",
@@ -686,22 +686,22 @@
       "ability_dex",
       "cr_num"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 7.5034,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 3.2978,
     "coef": [
-      0.572437,
-      0.318999
+      0.943473,
+      0.278564
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.3758,
-    "test_coverage": 0.958,
-    "r2": 0.343,
-    "mae": 2.832,
-    "baseline_mae": 3.296,
-    "equation": "dex = 0.5724\u00b7dex + 0.3190\u00b7CR + 7.5034"
+    "conformal_quantile_relative": 0.2396,
+    "test_coverage": 0.656,
+    "r2": -0.106,
+    "mae": 4.069,
+    "baseline_mae": 3.812,
+    "equation": "dex = 0.9435\u00b7dex + 0.2786\u00b7CR + 3.2978"
   },
   "5e_to_4e/ability_con": {
     "direction": "5e_to_4e",
@@ -712,22 +712,22 @@
       "ability_con",
       "cr_num"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 7.3924,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 9.5995,
     "coef": [
-      0.635571,
-      0.0
+      0.513026,
+      0.139106
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.3928,
-    "test_coverage": 0.917,
-    "r2": 0.248,
-    "mae": 2.805,
-    "baseline_mae": 3.737,
-    "equation": "con = 0.6356\u00b7con + 0.0000\u00b7CR + 7.3924"
+    "conformal_quantile_relative": 0.2922,
+    "test_coverage": 0.844,
+    "r2": 0.366,
+    "mae": 2.989,
+    "baseline_mae": 3.985,
+    "equation": "con = 0.5130\u00b7con + 0.1391\u00b7CR + 9.5995"
   },
   "5e_to_4e/ability_int": {
     "direction": "5e_to_4e",
@@ -738,22 +738,22 @@
       "ability_int",
       "cr_num"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 1.2679,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 0.2259,
     "coef": [
-      0.868878,
+      0.990143,
       0.0
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.6673,
-    "test_coverage": 0.958,
-    "r2": 0.684,
-    "mae": 2.545,
-    "baseline_mae": 4.525,
-    "equation": "int = 0.8689\u00b7int + 0.0000\u00b7CR + 1.2679"
+    "conformal_quantile_relative": 0.4075,
+    "test_coverage": 0.844,
+    "r2": 0.865,
+    "mae": 2.126,
+    "baseline_mae": 5.941,
+    "equation": "int = 0.9901\u00b7int + 0.0000\u00b7CR + 0.2259"
   },
   "5e_to_4e/ability_wis": {
     "direction": "5e_to_4e",
@@ -764,22 +764,22 @@
       "ability_wis",
       "cr_num"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 8.6221,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 10.7332,
     "coef": [
-      0.379068,
-      0.152543
+      0.21182,
+      0.187681
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.4412,
-    "test_coverage": 0.958,
-    "r2": 0.022,
-    "mae": 2.142,
-    "baseline_mae": 2.226,
-    "equation": "wis = 0.3791\u00b7wis + 0.1525\u00b7CR + 8.6221"
+    "conformal_quantile_relative": 0.3523,
+    "test_coverage": 0.906,
+    "r2": 0.044,
+    "mae": 2.162,
+    "baseline_mae": 2.35,
+    "equation": "wis = 0.2118\u00b7wis + 0.1877\u00b7CR + 10.7332"
   },
   "5e_to_4e/ability_cha": {
     "direction": "5e_to_4e",
@@ -790,21 +790,21 @@
       "ability_cha",
       "cr_num"
     ],
-    "n": 117,
-    "n_train": 70,
-    "n_cal": 23,
-    "n_test": 24,
-    "intercept": 6.0731,
+    "n": 154,
+    "n_train": 92,
+    "n_cal": 30,
+    "n_test": 32,
+    "intercept": 4.6573,
     "coef": [
-      0.618704,
+      0.766473,
       0.0
     ],
     "alpha": 0.2,
-    "conformal_quantile_relative": 0.5652,
-    "test_coverage": 0.958,
-    "r2": 0.449,
-    "mae": 2.631,
-    "baseline_mae": 3.955,
-    "equation": "cha = 0.6187\u00b7cha + 0.0000\u00b7CR + 6.0731"
+    "conformal_quantile_relative": 0.3002,
+    "test_coverage": 0.75,
+    "r2": 0.653,
+    "mae": 2.913,
+    "baseline_mae": 5.173,
+    "equation": "cha = 0.7665\u00b7cha + 0.0000\u00b7CR + 4.6573"
   }
 }

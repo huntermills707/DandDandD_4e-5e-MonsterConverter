@@ -1,0 +1,11 @@
+{
+  "method": "metadata",
+  "cardinality": "many",
+  "elbow_ratio": 2.0,
+  "metadata": {
+    "top_k": 5,
+    "name_min_sim": 0.65,
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+  },
+  "n_training_pairs": 154
+}
