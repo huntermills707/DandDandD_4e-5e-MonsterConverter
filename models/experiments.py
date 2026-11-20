@@ -8,9 +8,14 @@ true value.
 
 Usage:
     .venv/bin/python -m models.experiments [--data real|surrogate] [--fields]
+    .venv/bin/python -m models.experiments --nested-selection
+    .venv/bin/python -m models.experiments --interactions
 """
 
 import argparse
+from collections import Counter
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 
 import numpy as np
 
@@ -137,42 +142,125 @@ def d10(spec):
 DESIGNS = [d0, d2, d7, d8, d9, d10]
 
 
+def nested_ratios(pairs, spec, variants, n_repeats=3, seed=2000):
+    """Honest held-out error of feature-selection procedures: selection is
+    re-run inside each outer training fold. variants: {name: (backward
+    pool, forward extras, forward threshold)}. Returns {name: mean MAE /
+    baseline over repeats} and {name: Counter of kept features}."""
+    from models.fit_models import (COUNTERPART, DEFAULT_DESIGN, extract, feature_value,
+                                   grouped_folds, rule_pairs, select_features, source_target)
+
+    pairs = rule_pairs(pairs, spec)
+    src, tgt = source_target(spec)
+    full = list(dict.fromkeys(f for pool, extras, _ in variants.values() for f in pool + extras))
+    X, y, g, same = extract(pairs, src, tgt, full, spec["target"])
+    usable = [p for p in pairs if p[tgt].get(spec["target"]) is not None
+              and all(feature_value(p, src, f) is not None for f in full)]
+    ratios = {n: [] for n in variants}
+    kept_count = {n: Counter() for n in variants}
+    for rep in range(n_repeats):
+        pred = {n: np.empty_like(y) for n in variants}
+        base = np.empty_like(y)
+        for test in grouped_folds(g, 5, seed + rep):
+            tr = np.setdiff1d(np.arange(len(y)), test)
+            for n, (pool, extras, tol_add) in variants.items():
+                kept, _ = select_features([usable[k] for k in tr], dict(spec, features=pool),
+                                          DEFAULT_DESIGN,
+                                          COUNTERPART[spec["direction"]][spec["target"]],
+                                          extras=extras, tol_add=tol_add)
+                kept_count[n].update(kept)
+                idx = [full.index(f) for f in kept]
+                m = DEFAULT_DESIGN()
+                m.features = kept
+                pred[n][test] = m.fit(X[tr][:, idx], y[tr]).predict(X[test][:, idx])
+            base[test] = y[tr].mean()
+        b = np.abs(y - base)[same].mean()
+        for n in variants:
+            ratios[n].append(np.abs(y - pred[n])[same].mean() / b)
+    return {n: float(np.mean(r)) for n, r in ratios.items()}, kept_count
+
+
 def nested_selection(pairs, n_repeats=3):
-    """Honest cost of feature pruning: selection re-run inside each outer
-    training fold, vs. the unpruned explainable design. Returns rows of
-    (field, unpruned MAE/baseline, pruned MAE/baseline)."""
-    from models.fit_models import (COUNTERPART, DEFAULT_DESIGN, ROLE_FEATURES, extract,
-                                   grouped_folds, select_features, source_target)
+    """Honest cost of feature pruning: the shipped selection re-run inside
+    each outer training fold, vs. the unpruned explainable design. Returns
+    rows of (field, unpruned MAE/baseline, pruned MAE/baseline)."""
+    from models.fit_models import (DEFAULT_DESIGN, candidate_features, extract, grouped_folds,
+                                   rule_pairs, source_target)
 
     rows = []
     for spec in MODEL_SPECS:
         src, tgt = source_target(spec)
-        full = spec["features"] + ROLE_FEATURES
-        X, y, g, same = extract(pairs, src, tgt, full, spec["target"])
-        usable = [p for p in pairs if p[tgt].get(spec["target"]) is not None and all(
-            f.startswith("role_") or p[src].get(f) is not None for f in full)]
-        ratios = {"full": [], "pruned": []}
+        full = candidate_features(spec)
+        sub = rule_pairs(pairs, spec)
+        X, y, g, same = extract(sub, src, tgt, full, spec["target"])
+        unpruned = []
         for rep in range(n_repeats):
-            pred = {"full": np.empty_like(y), "pruned": np.empty_like(y)}
-            base = np.empty_like(y)
+            pred, base = np.empty_like(y), np.empty_like(y)
             for test in grouped_folds(g, 5, 2000 + rep):
                 tr = np.setdiff1d(np.arange(len(y)), test)
                 m = DEFAULT_DESIGN()
                 m.features = full
-                pred["full"][test] = m.fit(X[tr], y[tr]).predict(X[test])
-                kept, _ = select_features([usable[k] for k in tr], dict(spec, features=full),
-                                          DEFAULT_DESIGN, COUNTERPART[spec["direction"]][spec["target"]])
-                idx = [full.index(f) for f in kept]
-                ms = DEFAULT_DESIGN()
-                ms.features = kept
-                pred["pruned"][test] = ms.fit(X[tr][:, idx], y[tr]).predict(X[test][:, idx])
+                pred[test] = m.fit(X[tr], y[tr]).predict(X[test])
                 base[test] = y[tr].mean()
-            b = np.abs(y - base)[same].mean()
-            for k in ratios:
-                ratios[k].append(np.abs(y - pred[k])[same].mean() / b)
-        rows.append((f"{spec['direction']}/{spec['target']}",
-                     float(np.mean(ratios["full"])), float(np.mean(ratios["pruned"]))))
+            unpruned.append(np.abs(y - pred)[same].mean() / np.abs(y - base)[same].mean())
+        pruned, _ = nested_ratios(pairs, spec, {"pruned": (full, [], 0.0)}, n_repeats)
+        rows.append((f"{spec['direction']}/{spec['target']}", float(np.mean(unpruned)),
+                     pruned["pruned"]))
     return rows
+
+
+def interaction_variants(spec):
+    """Candidate pools for role and interaction terms (see --interactions).
+    Tier slopes: elite/solo x level/CR (and x the counterpart stat);
+    combat roles: 4e artillery/brute/controller/lurker/soldier indicators
+    (skirmisher = reference), either in the backward pool or offered
+    afterwards one at a time, entering only if they cut CV error by 3%."""
+    from models.fit_models import (COMBAT_ROLES, COUNTERPART, ROLE_FEATURES, SCALE,
+                                   candidate_features)
+
+    scale = SCALE[spec["direction"]]
+    base = spec["features"] + ROLE_FEATURES
+    tiers = ("role_elite", "role_solo")  # minions: 6 pairs, none same-creature
+    slopes = [f"{t}*{scale}" for t in tiers]
+    stat_slopes = [f"{t}*{c}" for t in tiers for c in COUNTERPART[spec["direction"]][spec["target"]]]
+    combat = [f"role_{r}" for r in COMBAT_ROLES]
+    return {
+        "tiers only (previous)": (base, [], 0.0),
+        "shipped": (candidate_features(spec), [], 0.0),
+        "+ tier slopes on level/CR": (base + slopes, [], 0.0),
+        "+ tier slopes on all terms": (base + slopes + stat_slopes, [], 0.0),
+        "+ combat roles (backward)": (base + combat, [], 0.0),
+        "+ everything (backward)": (base + slopes + stat_slopes + combat, [], 0.0),
+        "shipped, + combat (forward 3%)": (candidate_features(spec), combat, 0.03),
+    }
+
+
+def _interaction_job(pairs, n_repeats, spec):
+    return nested_ratios(pairs, spec, interaction_variants(spec), n_repeats)
+
+
+def interactions(pairs, n_repeats=3):
+    """Nested-CV comparison of role/interaction candidate pools, per field."""
+    with ProcessPoolExecutor() as ex:
+        res = list(ex.map(partial(_interaction_job, pairs, n_repeats), MODEL_SPECS))
+    names = list(interaction_variants(MODEL_SPECS[0]))
+    prev = [r[names[0]] for r, _ in res]
+    print(f"{'candidate pool':32s} {'median':>7s} {'mean':>6s}  fields better/worse >1%")
+    for n in names:
+        v = [r[n] for r, _ in res]
+        print(f"{n:32s} {np.median(v):7.3f} {np.mean(v):6.3f}  "
+              f"{sum(a < b * 0.99 for a, b in zip(v, prev)):2d}/"
+              f"{sum(a > b * 1.01 for a, b in zip(v, prev)):<2d}")
+    print(f"\n{'field (MAE / baseline)':26s} " + " ".join(f"{k:>6d}" for k in range(len(names)))
+          + "   most-kept role terms, 'everything' pool (of 15 folds)")
+    for spec, (r, kept) in zip(MODEL_SPECS, res):
+        row = [r[n] for n in names]
+        best = int(np.argmin(row))
+        extra = [(f, c) for f, c in kept["+ everything (backward)"].most_common()
+                 if f.startswith("role_") or "*" in f][:3]
+        print(f"{spec['direction'] + '/' + spec['target']:26s} "
+              + " ".join(f"{v:5.3f}{'*' if k == best else ' '}" for k, v in enumerate(row))
+              + "   " + ", ".join(f"{f}:{c}" for f, c in extra))
 
 
 def run(pairs, design):
@@ -191,8 +279,14 @@ def main(argv=None):
     ap.add_argument("--fields", action="store_true", help="per-field MAE ratio table")
     ap.add_argument("--nested-selection", action="store_true",
                     help="honest cost of feature pruning (selection inside each fold)")
+    ap.add_argument("--interactions", action="store_true",
+                    help="role/interaction candidate pools under nested CV")
     args = ap.parse_args(argv)
     pairs = load_pairs(resolve_source(args.data))
+
+    if args.interactions:
+        interactions(pairs)
+        return
 
     if args.nested_selection:
         rows = nested_selection(pairs)

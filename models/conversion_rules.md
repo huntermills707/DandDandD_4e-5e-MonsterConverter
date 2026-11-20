@@ -32,7 +32,7 @@ guessing the average (lower is better).
 | Stat | Rule | 80% range | Error | R² |
 |---|---|---|---|---|
 | level | 0.99·CR + 6.6  (solo -6.1) | ± 0.24·(result + 12) | 60% | 0.66 |
-| HP | 1.5·HP + 0.9  (elite +110, solo +350) | ± 0.3·(result + 130) | 37% | 0.86 |
+| HP | 0.83·HP + 50.5  (elite +130, solo +31·CR; minion = 1) | ± 0.23·(result + 140) | 29% | 0.93 |
 | AC | CR + 20.6  (solo -5.1) | ± 0.12·(result + 26) | 58% | 0.65 |
 | Fort | 0.24·STR + 0.62·CON + 0.61·CR + 8  (solo -5.8) | ± 0.12·(result + 25) | 56% | 0.71 |
 | Ref | CR + 17.7  (solo -4.1) | ± 0.13·(result + 23) | 58% | 0.67 |

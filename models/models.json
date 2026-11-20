@@ -814,7 +814,7 @@
     "features": [
       "hp",
       "role_elite",
-      "role_solo"
+      "role_solo*cr_num"
     ],
     "estimator": "explainable",
     "fit": "ols",
@@ -823,39 +823,43 @@
     "log_target": false,
     "log_features": [],
     "clip_min": 0.0,
-    "interval_offset": 130.0,
-    "n": 154,
+    "interval_offset": 140.0,
+    "n": 148,
     "n_eval": 87,
     "n_groups": 104,
     "cv": "grouped 5-fold x10, scored on same-creature pairs",
-    "intercept": 0.9,
+    "intercept": 50.5,
     "coef": [
-      1.5,
-      110.0,
-      350.0
+      0.83,
+      130.0,
+      31.0
     ],
     "alpha": 0.2,
-    "conformal_quantile": 0.3,
-    "r2": 0.857,
-    "r2_sd": 0.009,
-    "mae": 74.265,
-    "mae_sd": 2.04,
-    "baseline_mae": 198.526,
-    "baseline_mae_sd": 2.1,
-    "test_coverage": 0.864,
-    "test_coverage_sd": 0.012,
+    "conformal_quantile": 0.23,
+    "r2": 0.929,
+    "r2_sd": 0.001,
+    "mae": 58.09,
+    "mae_sd": 0.421,
+    "baseline_mae": 201.075,
+    "baseline_mae_sd": 2.038,
+    "test_coverage": 0.852,
+    "test_coverage_sd": 0.011,
     "coverage_by_third": [
-      0.93,
-      0.95,
-      0.71
+      0.98,
+      0.86,
+      0.72
     ],
-    "interval_rel_width": 1.28,
+    "interval_rel_width": 1.12,
     "dropped_features": [
       "cr_num",
-      "role_minion"
+      "role_solo",
+      "role_elite*cr_num"
     ],
-    "equation": "HP = 1.5\u00b7HP + 0.9  (elite +110, solo +350)",
-    "interval_rule": "\u00b1 0.3\u00b7(result + 130)"
+    "fixed_by_role": {
+      "minion": 1.0
+    },
+    "equation": "HP = 0.83\u00b7HP + 50.5  (elite +130, solo +31\u00b7CR; minion = 1)",
+    "interval_rule": "\u00b1 0.23\u00b7(result + 140)"
   },
   "5e_to_4e/ac": {
     "direction": "5e_to_4e",

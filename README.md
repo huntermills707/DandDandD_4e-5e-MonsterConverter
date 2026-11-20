@@ -149,6 +149,19 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
      coefficient is dropped, and any term whose removal raises CV error by
      under 1% goes (nested CV: median 59.8% → 60.2%). Log-scale HP/damage,
      ridge, and the original non-negative constraint did no better.
+   - **Role interactions** (`models/experiments.py --interactions`, nested
+     CV): 4e multiplies solo HP by 4, so when converting *to* 4e the solo HP
+     bonus grows with level. A solo × CR slope replaces the flat bonus
+     (*4e HP = 0.83·HP + 50.5, elite +130, solo +31·CR*), cutting 5e→4e HP
+     error from 39% to 29% of the baseline (R² 0.86 → 0.93). 4e minions
+     always have 1 HP, so that rule returns 1 for minions, and they are left
+     out of its fit. The other candidates were combat roles (brute, lurker,
+     soldier, ... vs. skirmisher), elite/solo slopes on level/CR for every
+     stat, and slopes on the counterpart stat. Offered all at once or forward
+     one at a time, they help some fields and hurt more (median error
+     60.2% → 59.2–61.2%), mostly by chasing noise in the small 5e
+     saving-throw sets. Minion slopes can't be scored: all 6 minion pairs are
+     related, not same-creature.
    - **Evaluation**: repeated grouped 5-fold CV (×10). Pairs sharing a 4e
      or 5e monster form one group and never straddle train and test;
      metrics are scored on held-out same-creature pairs and reported as
@@ -227,6 +240,7 @@ parser special-casing.
 # compare model designs under the same grouped CV; honest cost of pruning
 .venv/bin/python -m models.experiments --fields
 .venv/bin/python -m models.experiments --nested-selection
+.venv/bin/python -m models.experiments --interactions
 
 # fit within-edition scaling curves (level/CR -> stat)
 .venv/bin/python models/fit_scale_models.py

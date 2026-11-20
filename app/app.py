@@ -64,13 +64,37 @@ def is_role_feature(field):
     return field.startswith("role_")
 
 
-def predict_with_interval(model, values):
+def input_stats(feature):
+    """Typed-in stats a feature needs: "role_solo*cr_num" -> ["cr_num"]."""
+    return [f for f in feature.split("*") if not is_role_feature(f)]
+
+
+def feature_values(features, state):
+    """{feature: float} from typed stats and role indicators in `state`;
+    products for interaction terms. None if any input is missing."""
+    values = {}
+    for feature in features:
+        x = 1.0
+        for part in feature.split("*"):
+            try:
+                x *= float(state.get(part))
+            except (TypeError, ValueError):
+                return None
+        values[feature] = x
+    return values
+
+
+def predict_with_interval(model, values, role=None):
     """Point prediction and 80% interval for one model.
 
     values: {feature: float}. Mirrors models/fit_models.LinearDesign:
     optional log1p feature/target transforms, then the model's interval
-    rule ("scaled", "relative", "absolute", or "log").
+    rule ("scaled", "relative", "absolute", or "log"). A stat the 4e role
+    fixes (minion HP = 1) is returned exactly.
     """
+    fixed = model.get("fixed_by_role", {})
+    if role in fixed:
+        return fixed[role], fixed[role], fixed[role]
     log_features = set(model.get("log_features", []))
     z = model["intercept"]
     for coef, feature in zip(model["coef"], model["features"]):
@@ -101,7 +125,7 @@ def fields_for_direction(direction):
     for key, model in MODELS.items():
         if model["direction"] != direction:
             continue
-        input_fields.update(f for f in model["features"] if not is_role_feature(f))
+        input_fields.update(x for f in model["features"] for x in input_stats(f))
         output_fields.add(model["target"])
     # deterministic order
     input_fields = [f for f in FIELD_ORDER if f in input_fields]
@@ -265,7 +289,9 @@ app.layout = html.Div(
                                                     "repeats. 4e role (minion / elite / solo vs. "
                                                     "standard) enters as indicator terms; for 5e → 4e "
                                                     "it is the role the converted monster should "
-                                                    "play. The interval is an 80% cross-conformal "
+                                                    "play. 4e multiplies solo HP by 4, so the solo HP "
+                                                    "bonus is a slope on CR (solo +31·CR), and 4e "
+                                                    "minions always have 1 HP. The interval is an 80% cross-conformal "
                                                     "prediction interval (nominal miscoverage "
                                                     "α = 0.20) whose width scales with |prediction| "
                                                     "+ a typical value of the stat, so it is roughly "
@@ -425,17 +451,11 @@ def compute_outputs(direction, input_values, role):
         if model["direction"] != direction:
             continue
         target = model["target"]
-        features = model["features"]
-        values = {}
-        for feat in features:
-            try:
-                values[feat] = float(state.get(feat))
-            except (TypeError, ValueError):
-                break
-        if len(values) != len(features):
+        values = feature_values(model["features"], state)
+        if values is None and role not in model.get("fixed_by_role", {}):
             results[target] = empty
             continue
-        pred, low, high = predict_with_interval(model, values)
+        pred, low, high = predict_with_interval(model, values, role)
         results[target] = format_output(target, pred, low, high)
 
     return [results[f] for f in output_fields]

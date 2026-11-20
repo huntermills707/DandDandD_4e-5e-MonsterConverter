@@ -34,6 +34,7 @@ ALPHA = 0.20  # nominal miscoverage; 80% scale-adaptive prediction intervals
 N_FOLDS = 5
 N_REPEATS = 10
 MIN_N = 15
+ADD_TOL = 0.03  # a role/interaction term must cut CV error by 3% to enter
 
 # Each spec: direction, target field on the target side, and source features:
 # the target's counterpart stat(s) in the other edition plus the level/CR
@@ -65,11 +66,20 @@ MODEL_SPECS = [
 
 
 ROLE_TIERS = ("minion", "elite", "solo")  # 4e role tiers; "standard" is the reference
+# 4e combat roles; skirmisher is the reference (the DMG's baseline monster:
+# AC level + 14, 8 HP per level). Minions carry no combat role in the data.
+COMBAT_ROLES = ("artillery", "brute", "controller", "lurker", "soldier")
 
 
 def role_tier(role):
     r = (role or "").lower()
     return next((t for t in ROLE_TIERS if t in r), "standard")
+
+
+def role_flags(role):
+    """Set of 4e role words present: tier, combat role, and "leader"."""
+    r = (role or "").lower()
+    return {w for w in ROLE_TIERS + COMBAT_ROLES + ("skirmisher", "leader") if w in r}
 
 
 class LinearDesign:
@@ -184,6 +194,19 @@ NonNegLinear = LinearDesign()  # the original design
 ROLE_FEATURES = ["role_minion", "role_elite", "role_solo"]
 DEFAULT_DESIGN = LinearDesign("explainable", fit="ols", interval="scaled", round_sig=2)
 
+# Role interactions offered to the backward selection, by (direction, target).
+# 4e multiplies elite HP by 2 and solo HP by 4, so the role bonus on 4e HP
+# grows with level: a slope on CR rather than a flat bonus (nested CV: error
+# 39% -> 29% of baseline). 4e's other role adjustments are flat (+2 to
+# defenses and so on), and neither tier slopes elsewhere nor combat roles
+# (brute, lurker, ...) improved held-out error (models/experiments.py
+# --interactions), so they are not offered.
+INTERACTIONS = {("5e_to_4e", "hp"): ["role_elite*cr_num", "role_solo*cr_num"]}
+
+# Stats 4e fixes by role tier rather than scale: every minion has 1 HP. Those
+# pairs are left out of the rule's fit, and the rule returns the fixed value.
+FIXED_BY_ROLE = {("5e_to_4e", "hp"): {"minion": 1.0}}
+
 
 def source_target(spec):
     if spec["direction"] == "4e_to_5e":
@@ -191,12 +214,30 @@ def source_target(spec):
     return "5e", "4e"
 
 
+def rule_pairs(pairs, spec):
+    """Pairs a rule is fit on: those whose 4e role tier doesn't fix the target."""
+    fixed = FIXED_BY_ROLE.get((spec["direction"], spec["target"]), {})
+    return [p for p in pairs if role_tier(p["4e"].get("role")) not in fixed]
+
+
+def candidate_features(spec, role_features=ROLE_FEATURES):
+    """Counterpart + scale, role tiers (minus fixed ones), and interactions."""
+    key = (spec["direction"], spec["target"])
+    fixed = FIXED_BY_ROLE.get(key, {})
+    return (spec["features"] + [f for f in role_features if f[5:] not in fixed]
+            + INTERACTIONS.get(key, []))
+
+
 def feature_value(pair, source_prefix, feature):
-    """Source-side stat, or a 4e role indicator ("role_elite", ...). Role
+    """Source-side stat, a 4e role indicator ("role_elite", "role_brute",
+    "role_leader"), or a product of two of those ("role_solo*level"). Role
     comes from the 4e side in both directions: for 5e -> 4e it is the role
     the converted monster should have."""
+    if "*" in feature:
+        a, b = (feature_value(pair, source_prefix, f) for f in feature.split("*"))
+        return None if a is None or b is None else a * b
     if feature.startswith("role_"):
-        return float(role_tier(pair["4e"].get("role")) == feature[5:])
+        return float(feature[5:] in role_flags(pair["4e"].get("role")))
     return pair[source_prefix].get(feature)
 
 
@@ -295,14 +336,20 @@ def cv_mae(X, y, groups, is_same, make_model, n_repeats=3, n_folds=N_FOLDS, seed
     return float(np.mean(out))
 
 
-def select_features(pairs, spec, make_model, counterparts, tol=0.01):
-    """Backward elimination toward short, sensible rules.
+def select_features(pairs, spec, make_model, counterparts, extras=(), tol=0.01,
+                    tol_add=ADD_TOL):
+    """Backward elimination toward short, sensible rules, then a strict
+    forward step for role and interaction terms.
 
     1. A counterpart stat with a negative coefficient is dropped (a stat
        shouldn't convert in the opposite direction; it means the scale
        term is doing the work).
     2. Then, repeatedly, the term whose removal raises CV error least is
        dropped while that rise stays under `tol` (1%).
+    3. Then, repeatedly, the candidate in `extras` that lowers CV error most
+       is added while it lowers it by more than `tol_add`. Unused by the
+       shipped rules (no forward candidates earned a place under nested CV;
+       models/experiments.py --interactions).
     Returns (kept features, dropped features).
     """
     src, tgt = source_target(spec)
@@ -315,6 +362,10 @@ def select_features(pairs, spec, make_model, counterparts, tol=0.01):
         model.features = feats
         return X, y, g, same, model
 
+    def score(feats):
+        X, y, g, same, model = data(feats)
+        return cv_mae(X, y, g, same, model)
+
     while True:
         X, y, g, same, model = data(features)
         model.fit(X, y)
@@ -324,19 +375,22 @@ def select_features(pairs, spec, make_model, counterparts, tol=0.01):
         features.remove(neg[0])
         dropped.append(neg[0])
 
-    X, y, g, same, model = data(features)
-    current = cv_mae(X, y, g, same, model)
+    current = score(features)
     while features:
-        trials = []
-        for f in features:
-            rest = [x for x in features if x != f]
-            Xr, yr, gr, sr, mr = data(rest)
-            trials.append((cv_mae(Xr, yr, gr, sr, mr), f))
-        best_mae, best_f = min(trials)
+        best_mae, best_f = min((score([x for x in features if x != f]), f) for f in features)
         if best_mae > current * (1 + tol):
             break
         features.remove(best_f)
         dropped.append(best_f)
+        current = best_mae
+
+    pool = [f for f in extras if f not in features]
+    while pool:
+        best_mae, best_f = min((score(features + [f]), f) for f in pool)
+        if best_mae >= current * (1 - tol_add):
+            break
+        features.append(best_f)
+        pool.remove(best_f)
         current = best_mae
     return features, dropped
 
@@ -407,25 +461,39 @@ def num(x):
 
 
 def equation_string(model):
-    """e.g. 'HP = 0.19·HP + 1.3·level - 12 (minion -4, elite -9.7, solo +59)'."""
-    terms, roles = [], []
+    """e.g. 'HP = 0.84·HP + 44  (elite +140, solo +31·CR; minion = 1)'.
+    Role adjustments are grouped by role: a flat bonus, a slope
+    ("role_solo*cr_num" -> "solo +31·CR"), or a fixed value."""
+    terms, roles = [], {}
+
+    def term(c, label, lead):
+        coef = "" if label and abs(abs(c) - 1) < 0.005 else num(abs(c))
+        body = f"{coef}·{label}" if coef and label else coef or label
+        return f"{'-' if c < 0 else '+'}{lead}{body}"
+
     for c, f in zip(model["coef"], model["features"]):
-        if f.startswith("role_"):
-            roles.append(f"{f[5:]} {'+' if c >= 0 else '-'}{num(abs(c))}")
+        parts = f.split("*")
+        role = next((x[5:] for x in parts if x.startswith("role_")), None)
+        stats = [x for x in parts if not x.startswith("role_")]
+        if role:
+            label = "·".join(short_label(x) for x in stats)
+            roles.setdefault(role, []).append(term(c, label, ""))
             continue
         label = short_label(f)
         if f in set(model.get("log_features", [])):
             label = f"ln(1+{label})"
-        coef = "" if abs(abs(c) - 1) < 0.005 else f"{num(abs(c))}·"
-        terms.append(f"{'-' if c < 0 else '+'} {coef}{label}")
+        terms.append(term(c, label, " "))
     inter = model["intercept"]
     if inter or not terms:
         terms.append(f"{'-' if inter < 0 else '+'} {abs(inter):g}")
     rhs = " ".join(terms)
     rhs = rhs[2:] if rhs.startswith("+ ") else "-" + rhs[2:]
     eq = f"{short_label(model['target'])} = {rhs}"
-    if roles:
-        eq += f"  ({', '.join(roles)})"
+    notes = ", ".join(f"{r} {' '.join(t)}" for r, t in roles.items())
+    fixed = "; ".join(f"{r} = {v:g}" for r, v in model.get("fixed_by_role", {}).items())
+    notes = "; ".join(x for x in (notes, fixed) if x)
+    if notes:
+        eq += f"  ({notes})"
     return eq
 
 
@@ -470,14 +538,18 @@ def fit_all(pairs, make_model=DEFAULT_DESIGN, extra_features=ROLE_FEATURES, sele
     for spec in MODEL_SPECS:
         key = f"{spec['direction']}/{spec['target']}"
         counterparts = COUNTERPART[spec["direction"]][spec["target"]]
-        spec = dict(spec, features=spec["features"] + list(extra_features))
+        spec = dict(spec, features=candidate_features(spec, list(extra_features)))
+        fit_pairs = rule_pairs(pairs, spec)
         dropped = []
         if select:
-            kept, dropped = select_features(pairs, spec, make_model, counterparts)
+            kept, dropped = select_features(fit_pairs, spec, make_model, counterparts)
             spec = dict(spec, features=kept)
-        result = fit_spec(pairs, spec, make_model)
+        result = fit_spec(fit_pairs, spec, make_model)
         if result is not None:
             result["dropped_features"] = dropped
+            fixed = FIXED_BY_ROLE.get((spec["direction"], spec["target"]))
+            if fixed:
+                result["fixed_by_role"] = fixed
         if result is None:
             if verbose:
                 print(f"  skipping {key}: not enough data")
