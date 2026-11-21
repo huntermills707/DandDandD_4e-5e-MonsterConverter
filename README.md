@@ -6,9 +6,13 @@ starting point for the other edition: level/CR, HP, AC, attack, damage,
 ability scores, defenses and saving throws. A second app rescales a monster
 to a different level or CR within its own edition.
 
-<!-- TODO: add the PyCafe links once the apps are saved there. -->
-- **Edition converter:** *(PyCafe link)*
-- **Difficulty scaler:** *(PyCafe link)*
+[![PyCafe](https://py.cafe/logos/pycafe_logo.png)](https://py.cafe/app/huntermills707/dnd-monster-stat-converter) <-- **Edition converter** (PyCafe demo)
+
+[![PyCafe](https://py.cafe/logos/pycafe_logo.png)](https://py.cafe/app/huntermills707/dnd-monster-scaling) <-- **Difficulty scaler** (PyCafe demo)
+
+Both demos run entirely in your browser, so the first load takes a few
+seconds while Python starts up.
+
 - **No computer at the table?** Every conversion is a short formula you can
   apply by hand: [`models/conversion_rules.md`](models/conversion_rules.md).
 
@@ -54,7 +58,8 @@ monster unusual (a tough-but-weak monster stays tough-but-weak).
 **Running it on your own computer.** The apps need only Python and Dash:
 
 ```bash
-git clone <this repo> && cd dnd_monster_edition_converter
+git clone https://github.com/huntermills707/DandDandD_4e-5e-MonsterConverter.git
+cd DandDandD_4e-5e-MonsterConverter
 python3 -m venv .venv && .venv/bin/pip install dash
 .venv/bin/python app/app.py         # converter: http://127.0.0.1:8050
 .venv/bin/python app/scale_app.py   # scaler:    http://127.0.0.1:8051
@@ -452,7 +457,10 @@ This writes a flat folder per app to `dist/pycafe/` (`app.py`, the model
 JSON, `styles.css`, `requirements.txt`) and `dist/pycafe/links.md`, a PyCafe
 snippet link per app with every file embedded. Open a link, check the app,
 and save it as a PyCafe project (or create a Dash project and upload the
-folder's files). Rerun after refitting the models. Run from a flat folder,
+folder's files). The live demos are the PyCafe projects
+`huntermills707/dnd-monster-stat-converter` and
+`huntermills707/dnd-monster-scaling`; to update one, upload the rebuilt
+files over the old ones. Rerun after refitting the models. Run from a flat folder,
 the apps read their JSON from beside `app.py` and inline `styles.css`, since
 there is no `assets/` folder.
 
