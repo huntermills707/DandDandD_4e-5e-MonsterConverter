@@ -16,3 +16,7 @@ manual/local/
 
 # Local history/data backups
 backup/
+
+# Build output (deploy/build_pycafe.py) and IDE settings
+dist/
+.idea/

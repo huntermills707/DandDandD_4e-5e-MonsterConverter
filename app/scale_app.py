@@ -16,14 +16,25 @@ Runs on port 8051 so it can live next to the converter app (port 8050).
 """
 
 import json
+import sys
 from pathlib import Path
 
 import dash
 from dash import dcc, html, Input, Output, ALL
 from dash.exceptions import PreventUpdate
 
-ROOT = Path(__file__).resolve().parent.parent
-SCALE_MODELS_PATH = ROOT / "models" / "scale_models.json"
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+
+
+def data_file(name):
+    """models/<name> in the repo, or <name> beside this file in the flat
+    hosted bundle (deploy/build_pycafe.py)."""
+    flat = HERE / name
+    return flat if flat.exists() else ROOT / "models" / name
+
+
+SCALE_MODELS_PATH = data_file("scale_models.json")
 
 
 def load_scale_models():
@@ -152,6 +163,23 @@ app = dash.Dash(
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
 )
 app.title = "D&D Monster Difficulty Scaler"
+
+
+def inline_css(dash_app):
+    """Dash serves assets/ itself; the flat hosted bundle ships styles.css
+    beside the app instead, so inline it into the page."""
+    css = HERE / "styles.css"
+    if not (HERE / "assets").is_dir() and css.exists():
+        dash_app.index_string = dash_app.index_string.replace(
+            "{%css%}", "{%css%}\n<style>\n" + css.read_text(encoding="utf-8") + "\n</style>")
+
+
+inline_css(app)
+
+FAN_CONTENT = ("Unofficial Fan Content permitted under the Wizards of the Coast Fan Content "
+               "Policy. Not approved or endorsed by Wizards. Portions of the materials used "
+               "are property of Wizards of the Coast. ©Wizards of the Coast LLC.")
+
 
 def hero(title, subtitle, toggle):
     return html.Header(
@@ -294,8 +322,10 @@ app.layout = html.Div(
         ),
         html.Footer(
             className="footer",
-            children="Numeric input only — no rule-book text is hosted. "
-                     "Curves: models/scale_models.json.",
+            children=[
+                html.P("Numeric input only — no rule-book text is hosted."),
+                html.P(FAN_CONTENT),
+            ],
         ),
     ],
 )
@@ -519,5 +549,5 @@ def render_curves(_):
     return children
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and sys.platform != "emscripten":  # PyCafe serves `app` itself
     app.run(debug=True, port=8051)

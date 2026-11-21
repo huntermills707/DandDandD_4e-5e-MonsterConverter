@@ -17,6 +17,8 @@
     --up-soft: rgba(46, 125, 50, 0.10);
     --down: #c62828;
     --down-soft: rgba(198, 40, 40, 0.08);
+    --warn: #7a4f00;
+    --warn-soft: rgba(237, 160, 0, 0.12);
     --radius: 5px;
     --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -217,6 +219,15 @@ body {
     color: var(--muted);
     font-size: 0.85rem;
     margin: 0 0 16px;
+}
+
+.role-note {
+    color: var(--warn);
+    background: var(--warn-soft);
+    border-radius: var(--radius);
+    font-size: 0.82rem;
+    margin: 10px 0 0;
+    padding: 8px 12px;
 }
 
 .legend-chip {
@@ -670,6 +681,11 @@ body {
     font-size: 0.78rem;
     padding: 16px 20px 24px;
     border-top: 1px solid var(--border);
+}
+
+.footer p {
+    margin: 4px auto;
+    max-width: 720px;
 }
 
 /* ---------- Responsive ---------- */

@@ -8,14 +8,25 @@ Tabs:
 
 import json
 import math
+import sys
 from pathlib import Path
 
 import dash
 from dash import dcc, html, Input, Output, ALL
 from dash.exceptions import PreventUpdate
 
-ROOT = Path(__file__).resolve().parent.parent
-MODELS_PATH = ROOT / "models" / "models.json"
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+
+
+def data_file(name):
+    """models/<name> in the repo, or <name> beside this file in the flat
+    hosted bundle (deploy/build_pycafe.py)."""
+    flat = HERE / name
+    return flat if flat.exists() else ROOT / "models" / name
+
+
+MODELS_PATH = data_file("models.json")
 
 
 def load_models():
@@ -262,6 +273,32 @@ app = dash.Dash(
 app.title = "D&D Monster Edition Converter"
 
 
+def inline_css(dash_app):
+    """Dash serves assets/ itself; the flat hosted bundle ships styles.css
+    beside the app instead, so inline it into the page."""
+    css = HERE / "styles.css"
+    if not (HERE / "assets").is_dir() and css.exists():
+        dash_app.index_string = dash_app.index_string.replace(
+            "{%css%}", "{%css%}\n<style>\n" + css.read_text(encoding="utf-8") + "\n</style>")
+
+
+inline_css(app)
+
+FAN_CONTENT = ("Unofficial Fan Content permitted under the Wizards of the Coast Fan Content "
+               "Policy. Not approved or endorsed by Wizards. Portions of the materials used "
+               "are property of Wizards of the Coast. ©Wizards of the Coast LLC.")
+
+# 4e minions have no 5e counterpart, and only 6 matched pairs are minions,
+# too few to fit a minion term: the 4e -> 5e rules convert one as a standard
+# monster of its level (with its 1 HP).
+MINION_NOTE = ("4e minions have no 5e equivalent, and too few were matched to learn a "
+               "minion rule. These numbers are for a standard monster of the same level: "
+               "treat them as an upper bound and scale down to taste.")
+
+# A converted monster has at least 1 HP (low-level 4e monsters can convert below that).
+MIN_HP = 1.0
+
+
 def hero(title, subtitle, toggle):
     return html.Header(
         className="hero",
@@ -338,6 +375,8 @@ app.layout = html.Div(
                                                         options=ROLE_OPTIONS,
                                                         value="standard",
                                                     ),
+                                                    html.P(id="role-note", className="role-note",
+                                                           style={"display": "none"}),
                                                 ],
                                             ),
                                             html.Div(
@@ -435,11 +474,25 @@ app.layout = html.Div(
         ),
         html.Footer(
             className="footer",
-            children="Numeric input only — no rule-book text is hosted. "
-                     "Models: models/models.json.",
+            children=[
+                html.P("Numeric input only — no rule-book text is hosted."),
+                html.P(FAN_CONTENT),
+            ],
         ),
     ],
 )
+
+
+@app.callback(
+    Output("role-note", "children"),
+    Output("role-note", "style"),
+    Input("direction", "value"),
+    Input("role", "value"),
+)
+def update_role_note(direction, role):
+    if direction == "4e_to_5e" and role == "minion":
+        return MINION_NOTE, {}
+    return "", {"display": "none"}
 
 
 @app.callback(
@@ -623,6 +676,8 @@ def compute_outputs(direction, input_values, role, combat_role="skirmisher"):
             results[target] = empty
             continue
         pred, low, high = predict_with_interval(rule, values, role)
+        if target == "hp":
+            pred, low, high = max(pred, MIN_HP), max(low, MIN_HP), max(high, MIN_HP)
         results[target] = format_output(target, pred, low, high)
 
     # Dash fills pattern-matched outputs in ctx.outputs_list order, which after
@@ -716,5 +771,5 @@ def render_equations(_):
     return children
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and sys.platform != "emscripten":  # PyCafe serves `app` itself
     app.run(debug=True)

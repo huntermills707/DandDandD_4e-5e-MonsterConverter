@@ -1,7 +1,76 @@
 # D&D Monster Edition Converter
 
-Converts monster stat blocks between Dungeons & Dragons editions, starting
-with **4th edition → 5th edition**.
+A quick and dirty tool for DMs moving monsters between **D&D 4th and 5th
+edition**, in either direction. Type in a monster's numbers and get a
+starting point for the other edition: level/CR, HP, AC, attack, damage,
+ability scores, defenses and saving throws. A second app rescales a monster
+to a different level or CR within its own edition.
+
+<!-- TODO: add the PyCafe links once the apps are saved there. -->
+- **Edition converter:** *(PyCafe link)*
+- **Difficulty scaler:** *(PyCafe link)*
+- **No computer at the table?** Every conversion is a short formula you can
+  apply by hand: [`models/conversion_rules.md`](models/conversion_rules.md).
+
+## For DMs
+
+**Converting a monster.**
+
+1. Pick the direction (4e → 5e or 5e → 4e).
+2. Pick the monster's 4e role: minion, standard, elite or solo. When
+   converting *to* 4e, that's the role you want the new monster to play, and
+   you can also pick its combat role (brute, soldier, ...).
+3. Optionally type the level or CR you want the converted monster to have.
+   This is recommended: each edition sets most stats from level/CR, so the
+   other numbers come out noticeably better when you choose it. Left blank,
+   the tool guesses one from the source monster.
+4. Type in the stats you have. Results fill in as soon as a stat's rule has
+   everything it needs.
+
+Each result comes with an **80% range**: real conversions landed inside it
+about 4 times in 5. Use the middle number, then nudge within the range to
+taste.
+
+**Rescaling a monster** (difficulty scaler): pick the edition, type the
+monster's current level/CR and stats, and choose a new level/CR. Every stat
+moves along that edition's own level/CR curve, keeping what makes the
+monster unusual (a tough-but-weak monster stays tough-but-weak).
+
+**What it doesn't do.**
+
+- **Numbers only.** Powers, traits, spells, recharge abilities, legendary
+  actions and conditions are yours to convert by hand.
+- **Rough estimates.** The rules were fit on 154 monsters matched between
+  the 4e *Monster Manual* and the 5e *Monster Manual*. On a typical stat the
+  miss is about half of what you'd get by guessing the average for every
+  monster. HP, attack, CR/level and 4e defenses convert well; DEX and WIS are
+  only a little better than a guess.
+- **4e minions → 5e.** 5e has no minions, and too few were matched to learn
+  a rule, so a minion converts like a standard monster of its level (the app
+  warns you). Treat those numbers as an upper bound.
+- **Low-level 4e monsters** (level 1–2) tend to come out as CR 0, which is a
+  bit low. Type the CR you want instead.
+
+**Running it on your own computer.** The apps need only Python and Dash:
+
+```bash
+git clone <this repo> && cd dnd_monster_edition_converter
+python3 -m venv .venv && .venv/bin/pip install dash
+.venv/bin/python app/app.py         # converter: http://127.0.0.1:8050
+.venv/bin/python app/scale_app.py   # scaler:    http://127.0.0.1:8051
+```
+
+## Legal
+
+Unofficial Fan Content permitted under the
+[Wizards of the Coast Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy).
+Not approved or endorsed by Wizards. Portions of the materials used are
+property of Wizards of the Coast. ©Wizards of the Coast LLC.
+
+The code is under the [MIT License](LICENSE). No rule-book text is hosted or
+distributed: see the note below on what data is published.
+
+## How it was built
 
 Stat blocks are parsed from rule book PDFs into structured records, matched
 across editions by monster name, and the numeric fields (HP, AC, attack
@@ -48,6 +117,8 @@ data/
     processed/      matched cross-edition training pairs (local only)
 models/             fitted regression models + evaluation reports
 app/                Dash web apps (edition converter, difficulty scaler)
+deploy/
+    build_pycafe.py flat app bundles + snippet links for PyCafe hosting
 tests/              surrogate masking, model reproduction, override tests
 requirements.txt
 requirements-match.txt  extra deps for matching (CPU torch, sentence-transformers)
@@ -366,6 +437,24 @@ parser special-casing.
 # run the Dash difficulty scaler (port 8051)
 .venv/bin/python app/scale_app.py
 ```
+
+### Hosting on PyCafe
+
+[PyCafe](https://py.cafe) runs the Dash apps in the visitor's browser
+(Pyodide), so there is no server to keep up. The apps only need Dash plus
+their model JSON and stylesheet:
+
+```bash
+.venv/bin/python deploy/build_pycafe.py
+```
+
+This writes a flat folder per app to `dist/pycafe/` (`app.py`, the model
+JSON, `styles.css`, `requirements.txt`) and `dist/pycafe/links.md`, a PyCafe
+snippet link per app with every file embedded. Open a link, check the app,
+and save it as a PyCafe project (or create a Dash project and upload the
+folder's files). Rerun after refitting the models. Run from a flat folder,
+the apps read their JSON from beside `app.py` and inline `styles.css`, since
+there is no `assets/` folder.
 
 ### Without the rule books
 
