@@ -12,6 +12,11 @@ residual quantile q gives [pred * (1 - q), pred * (1 + q)]. Coverage is
 estimated honestly with nested CV (q chosen on the training folds only).
 The shipped equation and q are fit on all pairs.
 
+A rule may carry a known term (KNOWN_TERMS): a number the target edition
+adds by its own rules rather than one to fit, entering with coefficient 1.
+The 4e -> 5e saving throws take 5e's proficiency bonus by CR this way: a
+listed save is the ability modifier + PB, so only the modifier is fit.
+
 Results go to models/models.json (for the app) and models/eval_report.json.
 """
 
@@ -57,6 +62,24 @@ TARGET_SCALE = {"4e_to_5e": "cr_num", "5e_to_4e": "level"}   # target-side scale
 OTHER_EDITION = {"4e": "5e", "5e": "4e"}
 TARGET_SCALE_OF = {"4e": "cr_num", "5e": "level"}  # source edition -> target scale
 ABILITIES = ("str", "dex", "con", "int", "wis", "cha")
+# Known terms: features with a coefficient fixed at 1, a number the target
+# edition adds by its own rules rather than one to fit. LinearDesign takes
+# one out of the target before fitting and adds it back in link(), so the
+# rule reads "DEX save = PB + ...".
+KNOWN_TERMS = {"pb"}
+# 4e -> 5e saving throws, on the target CR. 5e lists a save only when the
+# monster is proficient, and the bonus is then its ability modifier + PB by
+# CR -- exactly so for 90% of the matched pairs (88% of the 5e MM). The rule
+# adds PB as a known term and fits only the modifier (models/experiments.py
+# --formula, nested CV, two seeds: error -17% and -11% DEX, -8% and -7% CON,
+# -2% and -6% WIS, -5% and -3% CHA). The terms are selected exactly as
+# without PB, then PB is added (fit_rule): selecting with PB in the pool
+# lets it absorb the CR trend, pruning drops terms like DEX's solo
+# adjustment, and most of the gain goes (DEX -10% and +5%, CHA +1% and
+# +7%). The
+# direct rules leave PB out: on a converted CR its steps add noise (DEX
+# save +23% and +30% worse).
+KNOWN_TERMS_OF = {("4e_to_5e", f"save_{a}"): ["pb"] for a in ("dex", "con", "wis", "cha")}
 COUNTERPART = {
     "4e_to_5e": {
         "cr_num": [], "hp": ["hp"], "ac": ["ac"], "attack_bonus": ["attack_bonus"],
@@ -94,6 +117,20 @@ def direct_spec(spec):
     the true CR, drops the 4e ability), so both rules are kept."""
     d = spec["direction"]
     return dict(spec, features=COUNTERPART[d][spec["target"]] + [SCALE[d]])
+
+
+def ability_mod(score):
+    """Both editions' modifier: floor((score - 10) / 2)."""
+    return (score - 10) // 2
+
+
+def proficiency_bonus(cr):
+    """5e proficiency bonus by CR (the Proficiency Bonus by Challenge Rating
+    table): 2 + floor((CR - 1) / 4) -- +2 at CR 0-4, +3 at 5-8, +4 at 9-12,
+    +5 at 13-16, +6 at 17-20, +7 at 21-24, +8 at 25-28, +9 at 29-30. The 5e
+    MM's listed saves agree at every CR that has any: save - ability modifier
+    is that value for 88% of them."""
+    return 2 + (max(int(math.floor(cr)), 1) - 1) // 4
 
 
 ROLE_TIERS = ("minion", "elite", "solo")  # 4e role tiers; "standard" is the reference
@@ -171,6 +208,13 @@ class LinearDesign:
         X, y, w = np.asarray(X)[keep], np.asarray(y)[keep], w[keep]
         Xt = self._tx(X)
         yt = np.log1p(np.maximum(y, 0)) if self.log_target else y
+        # known terms (coefficient 1) leave the target and return in link()
+        known = [k for k, f in enumerate(self.features) if f in KNOWN_TERMS]
+        free = list(range(Xt.shape[1]))
+        if known:
+            free = [k for k in free if k not in known]
+            yt = yt - Xt[:, known].sum(axis=1)
+            Xt = Xt[:, free]
         robust = self.fit_kind == "huber"
         if Xt.shape[1] == 0:  # intercept-only rule: the typical value
             center = weighted_median(yt, w) if robust else np.average(yt, weights=w)
@@ -203,6 +247,8 @@ class LinearDesign:
             r = yt - Xt @ self.coef_
             center = weighted_median(r, w) if robust else np.average(r, weights=w)
             self.intercept_ = round(float(center), 1)
+        if known:  # back in feature order, with their fixed coefficient
+            self.coef_ = np.insert(self.coef_, known, 1.0)
         return self
 
     def link(self, X):
@@ -240,6 +286,7 @@ class LinearDesign:
                 "round_sig": self.round_sig, "related_weight": self.related_weight,
                 "log_target": self.log_target,
                 "log_features": sorted(self.log_features & set(self.features)),
+                "known_terms": sorted(KNOWN_TERMS & set(self.features)),
                 "clip_min": self.clip_min,
                 "interval_offset": round(getattr(self, "scale_offset_", 0.0), 4)}
 
@@ -317,26 +364,27 @@ def counterparts_of(spec):
 
 
 def candidate_features(spec, role_features=ROLE_FEATURES):
-    """Counterpart + scale, max terms (rules on the target scale), role
-    tiers (minus fixed ones and those replaced by a slope), and
-    interactions."""
+    """The pool selection chooses from: counterpart + scale, max terms (rules
+    on the target scale), role tiers (minus fixed ones and those replaced by
+    a slope), and interactions. Known terms are not in it: fit_rule adds
+    them after selection."""
     key = (spec["direction"], spec["target"])
     fixed = FIXED_BY_ROLE.get(key, {})
     scale = next(f for f in spec["features"] if f in ("level", "cr_num"))
     maxes = MAX_TERMS.get(key, []) if scale == TARGET_SCALE[spec["direction"]] else []
     slopes = [f.format(scale=scale) for f in INTERACTIONS.get(key, [])]
     sloped = {f.split("*")[0] for f in slopes}
-    stats = [f for f in spec["features"] if f != scale]  # stats first, as rules read
-    return (stats + [f for f in maxes if f not in stats] + [scale]
+    stats = [f for f in spec["features"] if f != scale and f not in KNOWN_TERMS]
+    return (stats + [f for f in maxes if f not in stats] + [scale]  # stats first, as rules read
             + [f for f in role_features if f[5:] not in fixed and f not in sloped] + slopes)
 
 
 def feature_value(pair, source_prefix, feature):
     """Source-side stat, the target edition's level/CR, a 4e role indicator
-    ("role_elite", "role_brute", "role_leader"), or a product of two of
-    those ("role_solo*level"). Role
-    comes from the 4e side in both directions: for 5e -> 4e it is the role
-    the converted monster should have."""
+    ("role_elite", "role_brute", "role_leader"), a product of two of those
+    ("role_solo*level"), or a known term ("pb": 5e's proficiency bonus by
+    the target CR). Role comes from the 4e side in both directions: for
+    5e -> 4e it is the role the converted monster should have."""
     if "*" in feature:
         a, b = (feature_value(pair, source_prefix, f) for f in feature.split("*"))
         return None if a is None or b is None else a * b
@@ -350,6 +398,9 @@ def feature_value(pair, source_prefix, feature):
     if feature == TARGET_SCALE_OF[source_prefix]:
         # the target edition's level/CR: chosen by the GM, or converted
         return pair[OTHER_EDITION[source_prefix]].get(feature)
+    if feature == "pb":
+        cr = feature_value(pair, source_prefix, TARGET_SCALE_OF[source_prefix])
+        return None if cr is None else float(proficiency_bonus(cr))
     return pair[source_prefix].get(feature)
 
 
@@ -458,7 +509,8 @@ def select_features(pairs, spec, make_model, counterparts, extras=(), tol=0.01,
        shouldn't convert in the opposite direction; it means the scale
        term is doing the work).
     2. Then, repeatedly, the term whose removal raises CV error least is
-       dropped while that rise stays under `tol` (1%).
+       dropped while that rise stays under `tol` (1%). A known term, when a
+       caller offers one, is never dropped.
     3. Then, repeatedly, the candidate in `extras` that lowers CV error most
        is added while it lowers it by more than `tol_add` (4e combat roles,
        for the rules in COMBAT_FORWARD).
@@ -466,6 +518,7 @@ def select_features(pairs, spec, make_model, counterparts, extras=(), tol=0.01,
     """
     src, tgt = source_target(spec)
     features = list(spec["features"])
+    known = [f for f in features if f in KNOWN_TERMS]
     dropped = []
 
     def data(feats):
@@ -488,8 +541,9 @@ def select_features(pairs, spec, make_model, counterparts, extras=(), tol=0.01,
         dropped.append(neg[0])
 
     current = score(features)
-    while features:
-        best_mae, best_f = min((score([x for x in features if x != f]), f) for f in features)
+    while len(features) > len(known):
+        droppable = [f for f in features if f not in known]
+        best_mae, best_f = min((score([x for x in features if x != f]), f) for f in droppable)
         if best_mae > current * (1 + tol):
             break
         features.remove(best_f)
@@ -557,9 +611,16 @@ LABELS = {
     "cr_num": "CR", "level": "level", "hp": "HP", "ac": "AC", "attack_bonus": "attack",
     "damage_avg": "damage", "damage_per_round": "damage/round",
     "attacks_per_round": "attacks/round", "fort": "Fort", "ref": "Ref", "will": "Will",
+    "pb": "PB",
     **{f"ability_{a}": a.upper() for a in ABILITIES},
     **{f"save_{a}": f"{a.upper()} save" for a in ABILITIES},
 }
+
+PB_NOTE = ("PB is the 5e proficiency bonus by CR: +2 (CR 0–4), +3 (5–8), +4 (9–12), "
+           "+5 (13–16), +6 (17–20), +7 (21–24), +8 (25–28), +9 (29–30). 5e lists a "
+           "saving throw only when the monster is proficient, and the bonus is then "
+           "its ability modifier + PB (exactly so for 90% of the matched pairs), so "
+           "the 4e → 5e save rules add PB by rule and fit only the modifier.")
 
 
 def short_label(field):
@@ -621,6 +682,18 @@ def interval_string(model):
     return f"± {q:g}·result"
 
 
+def wrap(text, width=76):
+    """A paragraph as sheet-width lines."""
+    lines, line = [], ""
+    for word in text.split():
+        if len(line) + len(word) + 1 > width:
+            lines.append(line)
+            line = word
+        else:
+            line = f"{line} {word}".strip()
+    return lines + [line]
+
+
 def write_rules(models, path):
     """Plain-text conversion sheet for use without the app."""
     lines = [
@@ -644,6 +717,8 @@ def write_rules(models, path):
         "single attack with riders (\"plus 7 (2d6) fire\"), and damage/round",
         "the whole Multiattack routine.",
         "",
+        *wrap(PB_NOTE),
+        "",
     ]
 
     def row(m, target):
@@ -664,9 +739,17 @@ def write_rules(models, path):
 
 
 def fit_rule(pairs, spec, make_model, extra_features, select, direct=False):
-    """Candidate terms -> selection -> fit. Returns the result or None."""
+    """Candidate terms -> selection -> known terms -> fit. Returns the
+    result or None.
+
+    A rule on the target level/CR may carry known terms (KNOWN_TERMS_OF).
+    They are added after the selection, which picks the other terms exactly
+    as it would without them: offered to the selection, PB absorbs the CR
+    trend and pruning drops terms it should keep (DEX's solo adjustment),
+    costing most of the gain (models/experiments.py --formula)."""
     key = (spec["direction"], spec["target"])
     counterparts = counterparts_of(spec)
+    known = [] if direct else KNOWN_TERMS_OF.get(key, [])
     spec = dict(spec, features=candidate_features(spec, list(extra_features)))
     fit_pairs = rule_pairs(pairs, spec)
     dropped = []
@@ -676,6 +759,7 @@ def fit_rule(pairs, spec, make_model, extra_features, select, direct=False):
         kept, dropped = select_features(fit_pairs, spec, make_model, counterparts,
                                         extras=combat)
         spec = dict(spec, features=kept)
+    spec = dict(spec, features=known + spec["features"])  # first, as rules read
     result = fit_spec(fit_pairs, spec, make_model)
     if result is None:
         return None

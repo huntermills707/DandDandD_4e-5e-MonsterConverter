@@ -117,26 +117,47 @@ def max_parts(part):
     return part[4:-1].split(",") if part.startswith("max(") else None
 
 
+# 5e proficiency bonus by CR (the Proficiency Bonus by Challenge Rating
+# table): 2 + floor((CR - 1) / 4). Mirrors models/fit_models.py
+# (tests/test_app_consistency.py checks they agree).
+def proficiency_bonus(cr):
+    return 2 + (max(int(math.floor(cr)), 1) - 1) // 4
+
+
+PB_LABEL = ("PB, the 5e proficiency bonus by CR: +2 (CR 0–4), +3 (5–8), +4 (9–12), "
+            "+5 (13–16), +6 (17–20), +7 (21–24), +8 (25–28), +9 (29–30)")
+
+
+def stat_inputs(part):
+    """Typed-in stats a product term reads: "max(ability_str,ability_dex)" ->
+    ["ability_str", "ability_dex"], "pb" -> the target CR, a stat -> itself."""
+    return ["cr_num"] if part == "pb" else max_parts(part) or [part]
+
+
 def input_stats(feature):
     """Typed-in stats a feature needs: "role_solo*cr_num" -> ["cr_num"],
     "max(ability_str,ability_dex)" -> ["ability_str", "ability_dex"]."""
     out = []
     for f in feature.split("*"):
         if not is_role_feature(f):
-            out += max_parts(f) or [f]
+            out += stat_inputs(f)
     return out
 
 
 def feature_values(features, state):
     """{feature: float} from typed stats and role indicators in `state`;
-    products for interaction terms, the larger stat for max(a,b). None if
-    any input is missing."""
+    products for interaction terms, the larger stat for max(a,b), and the
+    proficiency bonus of the target CR for "pb". None if any input is
+    missing."""
     values = {}
     for feature in features:
         x = 1.0
         for part in feature.split("*"):
             try:
-                x *= max(float(state.get(f)) for f in max_parts(part) or [part])
+                if part == "pb":
+                    x *= proficiency_bonus(float(state.get("cr_num")))
+                else:
+                    x *= max(float(state.get(f)) for f in max_parts(part) or [part])
             except (TypeError, ValueError):
                 return None
         values[feature] = x
@@ -251,6 +272,8 @@ def feature_label(feature):
             parts.append(part[len("role_"):])
         elif max_parts(part):
             parts.append(f"max({', '.join(label_for(f) for f in max_parts(part))})")
+        elif part == "pb":
+            parts.append("PB")
         else:
             parts.append(label_for(part))
     return " × ".join(parts)
@@ -463,6 +486,14 @@ app.layout = html.Div(
                                         "+ a typical value of the stat, so it is roughly "
                                         "constant for small stats and proportional for "
                                         "large ones."
+                                    ),
+                                    html.P(
+                                        "5e lists a saving throw only when the monster is "
+                                        "proficient, and the bonus is then its ability "
+                                        "modifier plus the proficiency bonus (PB) — "
+                                        "exactly so for 9 matched pairs in 10. The 4e → 5e "
+                                        "save rules on a chosen CR therefore add PB by rule "
+                                        "and fit only the modifier from the 4e stats."
                                     ),
                                 ],
                             ),
@@ -720,6 +751,8 @@ def model_card(model):
                 ],
             ),
             html.Code(model["equation"], className="equation"),
+            *([html.P(PB_LABEL, className="model-foot")]
+              if model.get("known_terms") else []),
             html.Div(
                 className="interval-rule",
                 children=[html.Span("80% range", className="legend-chip"),

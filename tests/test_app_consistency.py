@@ -5,9 +5,9 @@ import sys
 import numpy as np
 import pytest
 
-from models.fit_models import (DEFAULT_DESIGN, MODEL_SPECS, LinearDesign, extract,
-                               feature_value, role_flags, role_tier, rule_pairs, source_target,
-                               weighted_median)
+from models.fit_models import (DEFAULT_DESIGN, MODEL_SPECS, LinearDesign, ability_mod, extract,
+                               feature_value, proficiency_bonus, role_flags, role_tier,
+                               rule_pairs, source_target, weighted_median)
 from pipeline.datasets import ROOT, load_pairs
 
 sys.path.insert(0, str(ROOT / "app"))
@@ -143,3 +143,67 @@ def test_combat_role_state():
     assert st["role_elite"] == 1.0 and st["role_brute"] == 1.0
     assert sum(st.values()) == 2.0
     assert sum(app.role_state("standard", "skirmisher").values()) == 0.0
+
+
+def test_proficiency_bonus():
+    """The app's copy of 5e's proficiency-bonus table matches the fitter's
+    and the published table (2 + floor((CR - 1) / 4))."""
+    assert [app.proficiency_bonus(cr) for cr in (0, 0.125, 0.5, 1, 4, 5, 8, 9, 12, 13, 16, 17, 20,
+                                                 21, 24, 25, 28, 29, 30)] == [
+        2, 2, 2, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9]
+    for cr in (0, 0.125, 0.25, 0.5, *range(1, 31)):
+        assert app.proficiency_bonus(cr) == proficiency_bonus(cr)
+
+
+def test_listed_saves_are_modifier_plus_pb():
+    """The premise of the save rules: a 5e saving throw is the monster's
+    ability modifier + PB, exactly, for most listed saves."""
+    exact = listed = 0
+    for p in load_pairs("surrogate"):
+        for a in ("str", "dex", "con", "int", "wis", "cha"):
+            save = p["5e"].get(f"save_{a}")
+            if save is None:
+                continue
+            listed += 1
+            expected = ability_mod(p["5e"][f"ability_{a}"]) + proficiency_bonus(p["5e"]["cr_num"])
+            exact += save == expected
+    assert listed >= 150 and exact / listed > 0.85
+
+
+def test_save_rules_add_pb_by_rule():
+    """4e -> 5e save rules on a chosen CR carry PB as a known term: first,
+    coefficient 1, never pruned -- and only they do. The direct rules (CR
+    blank) don't: on a converted CR its steps only add noise."""
+    saves = [f"4e_to_5e/save_{a}" for a in ("dex", "con", "wis", "cha")]
+    assert [k for k, m in app.MODELS.items() if m.get("known_terms")] == saves
+    for key in saves:
+        model = app.MODELS[key]
+        assert model["known_terms"] == ["pb"]
+        assert model["features"][0] == "pb" and model["coef"][0] == 1.0
+        assert model["equation"].split(" = ", 1)[1].startswith("PB + ")
+        assert "pb" not in model["direct"]["features"]
+        assert not model["direct"].get("known_terms")
+
+
+def test_pb_feature():
+    assert app.feature_values(["pb"], {"cr_num": "8"}) == {"pb": 3.0}
+    assert app.feature_values(["pb"], {"cr_num": 21}) == {"pb": 7.0}
+    assert app.feature_values(["pb"], {"cr_num": ""}) is None  # no target CR: direct rules
+    assert app.input_stats("pb") == ["cr_num"]
+    assert app.feature_label("pb") == "PB"
+
+
+def test_save_follows_pb_steps():
+    """Everything else fixed, a save rises by exactly 1 when the CR crosses a
+    PB step, and only by the rule's own CR slope between steps."""
+    model = app.MODELS["4e_to_5e/save_con"]
+    slope = dict(zip(model["features"], model["coef"])).get("cr_num", 0.0)
+    state = {**{f"ability_{a}": 16.0 for a in ("str", "dex", "con", "int", "wis", "cha")},
+             **app.role_state("standard", "skirmisher")}
+
+    def save(cr):
+        values = app.feature_values(model["features"], {**state, "cr_num": cr})
+        return app.predict_with_interval(model, values, "standard")[0]
+
+    assert abs((save(9) - save(8)) - (1.0 + slope)) < 1e-9  # CR 8 -> 9: +3 -> +4
+    assert abs((save(12) - save(9)) - 3 * slope) < 1e-9  # CR 9-12: all +4

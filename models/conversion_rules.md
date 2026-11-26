@@ -18,6 +18,12 @@ Damage: 4e damage is the basic attack's average; 5e damage is the best
 single attack with riders ("plus 7 (2d6) fire"), and damage/round
 the whole Multiattack routine.
 
+PB is the 5e proficiency bonus by CR: +2 (CR 0–4), +3 (5–8), +4 (9–12), +5
+(13–16), +6 (17–20), +7 (21–24), +8 (25–28), +9 (29–30). 5e lists a saving
+throw only when the monster is proficient, and the bonus is then its ability
+modifier + PB (exactly so for 90% of the matched pairs), so the 4e → 5e save
+rules add PB by rule and fit only the modifier.
+
 ## 4e → 5e
 
 With the target CR given:
@@ -36,10 +42,10 @@ With the target CR given:
 | INT | 0.76·INT + 2.2 | ± 0.16·(result + 10) | 50% | 0.73 |
 | WIS | 0.21·WIS + 0.2·CR + 8 | ± 0.14·(result + 12) | 81% | 0.27 |
 | CHA | 0.48·CHA + 0.35·CR + 2.6 | ± 0.17·(result + 11) | 58% | 0.61 |
-| DEX save | 0.17·DEX + 0.15·CR + 1.4  (solo -1.1) | ± 0.19·(result + 6) | 72% | 0.21 |
-| CON save | 0.17·max(STR, CON) + 0.36·CR - 0.1  (solo +1.8) | ± 0.12·(result + 8) | 47% | 0.46 |
-| WIS save | 0.38·CR + 2.1  (solo -1.1) | ± 0.14·(result + 6) | 51% | 0.47 |
-| CHA save | 0.43·CR + 2.3  (solo -0.71) | ± 0.12·(result + 7.5) | 53% | 0.53 |
+| DEX save | PB + 0.16·DEX - 0.094·CR - 0.3  (solo -0.71) | ± 0.18·(result + 6) | 68% | 0.26 |
+| CON save | PB + 0.18·max(STR, CON) + 0.11·CR - 1.8  (solo +1.7) | ± 0.11·(result + 8) | 43% | 0.47 |
+| WIS save | PB + 0.13·CR + 0.6  (solo -1) | ± 0.13·(result + 6) | 49% | 0.52 |
+| CHA save | PB + 0.16·CR + 1.2  (solo -0.55) | ± 0.12·(result + 7.5) | 51% | 0.59 |
 
 Direct, without settling the target CR:
 

@@ -35,6 +35,12 @@ Each result comes with an **80% range**: real conversions landed inside it
 about 4 times in 5. Use the middle number, then nudge within the range to
 taste.
 
+**Saving throws (4e → 5e).** The rule gives the bonus the monster would have
+*if proficient*. 5e lists only proficient saves, which are the ability
+modifier plus the proficiency bonus by CR (+2 at CR 0–4, +3 at 5–8, +4 at
+9–12, +5 at 13–16, +6 at 17–20). Whether the monster gets the save is your
+call; the edition tends to give it to monsters whose stat is high.
+
 **Rescaling a monster** (difficulty scaler): pick the edition, type the
 monster's current level/CR and stats, and choose a new level/CR. Every stat
 moves along that edition's own level/CR curve, keeping what makes the
@@ -263,8 +269,9 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
      harder (5e→4e damage −7% with a brute term), which would need a
      combat-role input in the app. Saves chained through 5e's own formula
      (ability modifier + proficiency bonus, which 82–94% of listed saves
-     obey exactly) helped DEX/CON but hurt WIS/CHA: 5e lists only
-     proficient saves, which skew high on their ability. Size helps 4e→5e
+     obey exactly) helped DEX/CON but hurt WIS/CHA under that design; see
+     *5e's save formula* below for how the formula is used now. 5e lists
+     only proficient saves, which skew high on their ability. Size helps 4e→5e
      STR (−11%) and nothing else beyond noise. DEX and WIS stay weak (74–86%
      error) in both directions; they already convert better than their
      ceilings, so what remains is creature-by-creature disagreement between
@@ -348,6 +355,45 @@ PDFs -> parsers/ -> JSONL stat blocks -> name matching -> training pairs
      sensible shape (about +0.1 per level for standard, +0.2 elite, +0.27
      solo) and cuts WIS/CHA error by 4–6%. That variant was picked after
      seeing results, though, and still hurts DEX.
+   - **5e's save formula** (`models/experiments.py --formula`, nested CV,
+     two seeds). Both editions read every modifier off the score
+     (`floor((stat − 10) / 2)`), and 5e builds its saving throws from them: a save
+     is listed only when the monster is proficient, and the bonus is then
+     the ability modifier + the proficiency bonus, exactly so for 88% of the
+     5e MM's listed saves (90% of the matched pairs), with PB = 2 +
+     floor((CR − 1) / 4), the published table. 4e defenses aren't built that
+     way: across the 4e MM their gap from 10 + level / 2 + modifier runs from
+     −2 to +12 (they follow level + role), so this is a 4e → 5e matter.
+     Variants were compared under the same folds:
+     - **PB as a known term (adopted).** Each save rule on a chosen CR keeps
+       the terms it had; PB enters with coefficient 1 and only the modifier
+       is fit: *DEX save = PB + 0.16·DEX − 0.094·CR − 0.3 (solo −0.71)*.
+       Held-out error falls on all four saves on both seeds: DEX −17% and
+       −11%, CON −8% and −7%, WIS −2% and −6%, CHA −5% and −3%; R² 0.21 →
+       0.26, 0.46 → 0.47, 0.47 → 0.52, 0.53 → 0.59. Answers move little, by
+       0.2–0.3 for the typical monster: a save is now flat within a band of
+       four CRs and +1 at each step, where the old rule rose smoothly. The
+       rule is the bonus *if proficient*; which saves a monster gets is left
+       to the GM. Of the variants below this one did best, so it was picked
+       after seeing the first seed; it held on the second.
+     - **How the other terms are chosen matters.** Selecting them with PB in
+       the pool lets PB absorb the CR trend; pruning then drops terms like
+       DEX's solo adjustment, and most of the gain goes (DEX −10% and +5%,
+       CHA +1% and +7%). So the terms are selected exactly as before, and
+       PB is added afterwards.
+     - **Chain, not adopted:** save = modifier of the converted score + PB,
+       no fitted numbers. Worse on three saves (DEX −13% and −9%, CON +8%
+       and +1%, WIS +2% and −3%, CHA +21% and +17%): the ability rules are
+       weakest (DEX, WIS) or shrink hardest (CHA) on just the monsters that
+       list saves, because designers give saves to high stats (a monster
+       with a listed WIS save has 4e WIS a median 6 points above 10, against
+       3 for the rest).
+     - **Direct rules and other stats: unchanged.** With the CR left blank,
+       PB comes from a converted CR and its steps add noise (DEX +23% and
+       +30% worse). 5e attack is PB + the better of STR / DEX for 81% of
+       the MM, but which ability drives it varies by monster: chained
+       +26–28%, PB known +3–4%. 4e defenses chained through 10 + level / 2 +
+       modifier: +144% to +217%.
    - **Evaluation**: repeated grouped 5-fold CV (×10). Pairs sharing a 4e
      or 5e monster form one group and never straddle train and test;
      metrics are scored on held-out same-creature pairs and reported as
@@ -432,6 +478,7 @@ parser special-casing.
 .venv/bin/python -m models.experiments --interactions
 .venv/bin/python -m models.experiments --loss
 .venv/bin/python -m models.experiments --two-stage
+.venv/bin/python -m models.experiments --formula
 
 # fit within-edition scaling curves (level/CR -> stat)
 .venv/bin/python models/fit_scale_models.py

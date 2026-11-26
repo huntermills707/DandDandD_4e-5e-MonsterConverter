@@ -14,6 +14,7 @@ Usage:
     .venv/bin/python -m models.experiments --two-stage
     .venv/bin/python -m models.experiments --combat
     .venv/bin/python -m models.experiments --max-features [--seed N --repeats N]
+    .venv/bin/python -m models.experiments --formula [--seed N --repeats N]
 """
 
 import os
@@ -483,6 +484,250 @@ def max_features(pairs, n_repeats=5, seed=2000):
                   + f"  [max: {n_max}]", flush=True)
 
 
+# Stats an edition computes from its own ability modifiers (both editions:
+# modifier = floor((score - 10) / 2)).
+#   5e lists a save only when the monster is proficient, and the bonus is
+#     then modifier + proficiency bonus (2 + floor((CR - 1) / 4)): exactly so
+#     for 88% of the 5e MM's listed saves, 90% of the matched pairs.
+#   81% of the 5e MM's attack bonuses are PB + the better STR / DEX modifier.
+#   4e defenses nominally are 10 + level / 2 + modifier, but across the 4e MM
+#     the gap from that spreads from -2 to +12: they follow level + role.
+FORMULA_RULES = {
+    ("4e_to_5e", "save_dex"): "save", ("4e_to_5e", "save_con"): "save",
+    ("4e_to_5e", "save_wis"): "save", ("4e_to_5e", "save_cha"): "save",
+    ("4e_to_5e", "attack_bonus"): "attack",
+    ("5e_to_4e", "fort"): "defense", ("5e_to_4e", "ref"): "defense",
+    ("5e_to_4e", "will"): "defense",
+}
+FORMULA_ABILITIES = {
+    "save_dex": ("ability_dex",), "save_con": ("ability_con",),
+    "save_wis": ("ability_wis",), "save_cha": ("ability_cha",),
+    "attack_bonus": ("ability_str", "ability_dex"),
+    "fort": ("ability_str", "ability_con"), "ref": ("ability_dex", "ability_int"),
+    "will": ("ability_wis", "ability_cha"),
+}
+FORMULA_VARIANTS = ["regression", "PB by rule", "PB by rule, selected", "chain", "chain rounded",
+                    "chain + offset", "blend"]
+FORMULA_GROUPS = [(("4e_to_5e", "save"), "4e_to_5e saves"), (("4e_to_5e", "attack"), "4e_to_5e attack"),
+                  (("5e_to_4e", "defense"), "5e_to_4e defenses")]
+
+
+def _formula_job(pairs, n_repeats, seed, job):
+    """One derived rule in one mode ('target': the target level/CR is given;
+    'direct': converted first). The same outer folds for every variant, and
+    every rule's term selection re-run inside each training fold.
+
+        regression          the rule without the formula: listed saves ~ 4e
+                            stats + level/CR (as shipped before)
+        PB by rule          its selected terms, with the formula's level/CR
+                            term (5e PB; 4e 10 + level / 2) subtracted from
+                            the target and added back: the known term
+                            fit_models.py ships
+        PB by rule, selected  as above, but selected with the term in the
+                            pool from the start (target level/CR only, 5e
+                            saves and attack): not what ships -- it costs
+                            most of the gain
+        chain               convert the ability score(s), apply the formula
+        chain rounded       the modifier of the rounded score, as shown
+        chain + offset      chain, plus the median residual of training rows
+        blend               free coefficient on the converted modifier, the
+                            formula's level/CR term fixed (out-of-fold mods)
+
+    Returns {variant: mean MAE / baseline} and the terms each fit kept."""
+    from models.fit_models import (COMBAT_FORWARD, COMBAT_ROLES, DEFAULT_DESIGN, FIXED_BY_ROLE,
+                                   MODEL_SPECS, TARGET_SCALE, ability_mod,
+                                   candidate_features, counterparts_of, direct_spec, extract,
+                                   feature_value, grouped_folds, proficiency_bonus, role_tier,
+                                   select_features, source_target)
+
+    spec, mode = job
+    direction, target = spec["direction"], spec["target"]
+    key = (direction, target)
+    kind = FORMULA_RULES[key]
+    src, tgt = source_target(spec)
+    scale = TARGET_SCALE[direction]
+    fixed = FIXED_BY_ROLE.get(key, {})
+    design = DEFAULT_DESIGN
+
+    def expanded(s):
+        if mode == "direct":
+            s = direct_spec(s)
+        return dict(s, features=candidate_features(s))
+
+    rule = expanded(spec)  # the candidate pool; known terms are never in it
+    rule_known = (dict(rule, features=["pb"] + rule["features"])
+                  if direction == "4e_to_5e" and mode == "target" else None)
+    scale_spec = expanded(next(s for s in MODEL_SPECS
+                               if (s["direction"], s["target"]) == (direction, scale)))
+    ab_specs = {a: expanded(next(s for s in MODEL_SPECS
+                                 if (s["direction"], s["target"]) == (direction, a)))
+                for a in FORMULA_ABILITIES[target]}
+
+    def usable(k, s):
+        p = pairs[k]
+        return (role_tier(p["4e"].get("role")) not in fixed
+                and p[tgt].get(s["target"]) is not None
+                and all(feature_value(p, src, f) is not None for f in s["features"]))
+
+    def known_value(x):
+        """The formula's level/CR term: 5e PB by CR; 4e 10 + level / 2."""
+        return (proficiency_bonus(max(x, 0.0)) if direction == "4e_to_5e"
+                else 10.0 + x / 2)
+
+    def fit(keys, s, kept, shift=None):
+        """Rule `s` fit on `keys` with features `kept`; shift: {key: value}
+        subtracted from the target (a known part of it)."""
+        keys = [k for k in keys if usable(k, s)]
+        X, y, _, same = extract([pairs[k] for k in keys], src, tgt, kept, s["target"])
+        if shift is not None:
+            y = y - np.array([shift[k] for k in keys])
+        m = design()
+        m.features = kept
+        m.fit(X, y, same)
+        return lambda ks: m.predict(np.array([[feature_value(pairs[k], src, f) for f in kept]
+                                              for k in ks], float))
+
+    def nested(train_keys, s, counterparts=None, extras=(), tol_add=0.0):
+        keys = [k for k in train_keys if usable(k, s)]
+        kept, _ = select_features([pairs[k] for k in keys], s, design,
+                                  counterparts or counterparts_of(s), extras=extras,
+                                  tol_add=tol_add)
+        return fit(keys, s, kept), kept
+
+    rows = [k for k in range(len(pairs)) if usable(k, rule)]
+    _, y, _, same = extract([pairs[k] for k in rows], src, tgt, rule["features"], target)
+    same = same.astype(bool)
+    groups_all = np.array([p.get("group", k) for k, p in enumerate(pairs)])
+    tiers = np.array([role_tier(pairs[k]["4e"].get("role")) for k in rows])
+    known_true = {k: known_value(pairs[k]["5e" if src == "4e" else "4e"][scale]) for k in rows}
+    cps = counterparts_of(spec)
+    combat = [f"role_{r}" for r in COMBAT_ROLES] if key in COMBAT_FORWARD and mode == "target" else []
+    ratios = {n: [] for n in FORMULA_VARIANTS}
+    kept_count = {"regression": Counter(), "PB by rule, selected": Counter(),
+                  **{f"chain {a}": Counter() for a in ab_specs}}
+
+    for rep in range(n_repeats):
+        pred = {n: np.full(len(rows), np.nan) for n in FORMULA_VARIANTS}
+        base = np.full(len(rows), np.nan)
+        for f, test in enumerate(grouped_folds(groups_all, 5, seed + rep)):
+            held = set(test.tolist())
+            te_rows = np.array([i for i, k in enumerate(rows) if k in held])
+            tr_rows = np.array([i for i, k in enumerate(rows) if k not in held])
+            if not len(te_rows):
+                continue
+            train_keys = [k for k in range(len(pairs)) if k not in held]
+            te_keys = [rows[i] for i in te_rows]
+            tr_keys = [rows[i] for i in tr_rows]
+            base[te_rows] = y[tr_rows].mean()
+
+            def inner(keys, s, kept):
+                """Out-of-fold predictions for training rows: the outer fit's
+                kept terms, refit on inner folds."""
+                keys = [k for k in keys if usable(k, s)]
+                gg = np.array([pairs[k].get("group", k) for k in keys])
+                out = {}
+                for it in grouped_folds(gg, 5, (seed + rep) * 31 + f):
+                    h = [keys[i] for i in it]
+                    rest = [k for k in train_keys if k not in set(h)]
+                    out.update(zip(h, fit(rest, s, kept)(h)))
+                return out
+
+            # the formula's level/CR term: given, or converted by the scale rule
+            if mode == "target":
+                known = known_true
+            else:
+                scale_fit, scale_kept = nested(train_keys, scale_spec)
+                known = {k: known_value(v) for k, v in zip(te_keys, scale_fit(te_keys))}
+                known.update((k, known_value(v))
+                             for k, v in inner(tr_keys, scale_spec, scale_kept).items())
+            known_tr = np.array([known[k] for k in tr_keys])
+            known_te = np.array([known[k] for k in te_keys])
+
+            reg_fit, kept = nested(train_keys, rule, cps, combat, 0.03 if combat else 0.0)
+            kept_count["regression"].update(kept)
+            pred["regression"][te_rows] = reg_fit(te_keys)
+            pred["PB by rule"][te_rows] = fit(train_keys, rule, kept, shift=known)(te_keys) + known_te
+            if rule_known is not None:
+                sel_fit, sel_kept = nested(train_keys, rule_known, cps, combat,
+                                           0.03 if combat else 0.0)
+                kept_count["PB by rule, selected"].update(sel_kept)
+                pred["PB by rule, selected"][te_rows] = sel_fit(te_keys)
+
+            scores_te, scores_tr = {}, {}
+            for a, s in ab_specs.items():
+                a_fit, a_kept = nested(train_keys, s)
+                kept_count[f"chain {a}"].update(a_kept)
+                scores_te[a] = a_fit(te_keys)
+                oof = inner(tr_keys, s, a_kept)
+                scores_tr[a] = np.array([oof[k] for k in tr_keys])
+
+            def chain(scores, known_vals, rounded=False):
+                mods = [(ability_mod(np.round(v)) if rounded else (v - 10) / 2)
+                        for v in scores.values()]
+                return np.maximum.reduce(mods) + known_vals
+
+            c_te, c_tr = chain(scores_te, known_te), chain(scores_tr, known_tr)
+            pred["chain"][te_rows] = c_te
+            pred["chain rounded"][te_rows] = chain(scores_te, known_te, rounded=True)
+            resid = y[tr_rows] - c_tr
+
+            def offset(t):
+                r = resid[tiers[tr_rows] == t]
+                return float(np.median(r if len(r) >= 5 else resid))
+
+            offs = np.array([offset(t) for t in tiers[te_rows]])
+            pred["chain + offset"][te_rows] = c_te + offs
+            mod_tr = c_tr - known_tr
+            mod_te = c_te - known_te
+            m = design()
+            m.features = ["mod"]
+            m.fit(mod_tr[:, None], y[tr_rows] - known_tr, same[tr_rows])
+            pred["blend"][te_rows] = m.predict(mod_te[:, None]) + known_te
+        for n in FORMULA_VARIANTS:
+            r = np.abs(y - pred[n])
+            ratios[n].append(r[same].mean() / np.abs(y - base)[same].mean())
+    return {n: float(np.nanmean(v)) if not np.all(np.isnan(v)) else float("nan")
+            for n, v in ratios.items()}, kept_count
+
+
+def formula_rules(pairs, n_repeats=5, seed=2000):
+    """Nested CV: a stat the target edition computes from its own ability
+    modifiers (FORMULA_RULES), converted with the formula chained through
+    the converted ability score(s) or with its level/CR term added by rule,
+    vs. the plain regression (--formula). Rules on the target level/CR and
+    direct rules."""
+    jobs = [(s, mode) for s in MODEL_SPECS if (s["direction"], s["target"]) in FORMULA_RULES
+            for mode in ("target", "direct")]
+    with ProcessPoolExecutor() as ex:
+        res = list(ex.map(partial(_formula_job, pairs, n_repeats, seed), jobs))
+    by_job = {(s["direction"], s["target"], m): r for (s, m), (r, _) in zip(jobs, res)}
+    for mode in ("target", "direct"):
+        for (edition, kind), title in FORMULA_GROUPS:
+            keys = [(k, t) for (d, t), k in FORMULA_RULES.items() if d == edition and k == kind]
+            a = [by_job[(edition, t, mode)]["regression"] for _, t in keys]
+            print(f"== {mode:6s} {title:15s} {'regression':16s} median {np.median(a):.3f}, mean {np.mean(a):.3f}")
+            for n in FORMULA_VARIANTS[1:]:
+                b = [by_job[(edition, t, mode)][n] for _, t in keys]
+                if np.all(np.isnan(b)):
+                    continue
+                print(f"   {'':31s} {n:16s} median {np.nanmedian(b):.3f}, mean {np.nanmean(b):.3f}, "
+                      f"better/worse >1%: {sum(y < x * 0.99 for x, y in zip(a, b))}/"
+                      f"{sum(y > x * 1.01 for x, y in zip(a, b))}")
+    print(f"\nMAE / baseline on held-out same-creature pairs (change vs. regression)")
+    for (s, mode), (r, kept) in zip(jobs, res):
+        a = r["regression"]
+        head = f"{mode:6s} {s['direction'] + '/' + s['target']:24s} "
+
+        def cell(n):
+            return (f"{n}: {r[n]:.3f} ({(r[n] - a) / a:+5.1%})" if not np.isnan(r[n])
+                    else f"{n}: n/a")
+        print(head + " | ".join([f"regression {a:.3f}"] + [cell(n) for n in FORMULA_VARIANTS[1:3]]))
+        print(f"{'':32s}" + " | ".join(cell(n) for n in FORMULA_VARIANTS[3:]))
+        terms = "; ".join(f"{k[6:]}: {' '.join(f for f, c in v.most_common() if f.startswith('role_') or f.startswith('max('))}"
+                          for k, v in kept.items() if k.startswith("chain"))
+        print(f"{'':32s} role/max terms kept by the chained ability rules - {terms}")
+
+
 def _interaction_job(pairs, n_repeats, spec):
     return nested_ratios(pairs, spec, interaction_variants(spec), n_repeats)
 
@@ -535,8 +780,14 @@ def main(argv=None):
                     help="4e combat roles offered to each rule's forward step, nested CV")
     ap.add_argument("--max-features", action="store_true",
                     help="max(a, b) of two abilities offered to the rules that use one, nested CV")
-    ap.add_argument("--seed", type=int, default=2000, help="outer-fold seed (--max-features)")
-    ap.add_argument("--repeats", type=int, default=5, help="outer repeats (--max-features)")
+    ap.add_argument("--formula", action="store_true",
+                    help="stats the target edition derives from its modifiers (5e saves and "
+                         "attack, 4e defenses): chained through the converted ability scores "
+                         "or with the formula's level/CR term added by rule, vs. the regression")
+    ap.add_argument("--seed", type=int, default=2000,
+                    help="outer-fold seed (--max-features, --formula)")
+    ap.add_argument("--repeats", type=int, default=5,
+                    help="outer repeats (--max-features, --formula)")
     ap.add_argument("--two-stage", action="store_true",
                     help="rules on the target edition's level/CR, given or converted")
     args = ap.parse_args(argv)
@@ -556,6 +807,9 @@ def main(argv=None):
         return
     if args.max_features:
         max_features(pairs, args.repeats, args.seed)
+        return
+    if args.formula:
+        formula_rules(pairs, args.repeats, args.seed)
         return
 
     if args.nested_selection:
